@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/rs/zerolog v1.28.0
 	github.com/urfave/cli/v2 v2.23.7
-	github.com/valyala/fasthttp v1.43.0
+	github.com/valyala/fasthttp v1.44.0
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c
 )
 
