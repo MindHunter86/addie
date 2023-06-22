@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/hashicorp/consul/api v1.21.0
 	github.com/jedib0t/go-pretty/v6 v6.4.6
-	github.com/rs/zerolog v1.28.0
+	github.com/rs/zerolog v1.29.1
 	github.com/urfave/cli/v2 v2.23.7
 	github.com/valyala/fasthttp v1.43.0
 	golang.org/x/net v0.11.0
