@@ -9,7 +9,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.6
 	github.com/rs/zerolog v1.29.1
 	github.com/urfave/cli/v2 v2.25.7
-	golang.org/x/net v0.12.0
+	golang.org/x/net v0.14.0
 )
 
 require (
@@ -41,6 +41,6 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 )
