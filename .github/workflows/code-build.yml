@@ -128,7 +128,7 @@ jobs:
         token: ${{ secrets.DO_TOKEN }}
         images: '[{
               "name": "hlp-service",
-              "repository": "registry.digitalocean.com/anilibria/${{ env.GH_LWREPONAME }",
+              "repository": "registry.digitalocean.com/anilibria/${{ env.GH_LWREPONAME }}",
               "tag": "${{ needs.parse_phase.outputs.build_tag }}"
             }
           ]'
