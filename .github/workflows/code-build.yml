@@ -67,8 +67,8 @@ jobs:
         tags: |
           ghcr.io/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
           registry.digitalocean.com/anilibria/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
-        # cache-from: type=gha
-        # cache-to: type=gha
+        cache-from: type=gha
+        cache-to: type=gha
   # binary_build_pahse:
   #   name: Build standalone binaries for linux. windows, mac OS
   #   runs-on: ubuntu-latest
