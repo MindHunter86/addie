@@ -1,6 +1,7 @@
 # Github Actions: anilibria-hlp-service code builder
 name: anilibria-hlp-service code builder
 
+on: push
 # on:
 #   release:
 #     types:
