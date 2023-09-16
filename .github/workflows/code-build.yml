@@ -116,7 +116,7 @@ jobs:
   do_deploy_phase:
     name: Deploy Service to the Docker App Platform
     runs-on: ubuntu-latest
-    needs: [ parse_phase ]
+    needs: [ parse_phase, docker_build_phase ]
     steps:
     - name: Get lowercase repository name
       run: |
