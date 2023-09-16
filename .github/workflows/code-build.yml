@@ -1,10 +1,10 @@
 # Github Actions: anilibria-hlp-service code builder
 name: anilibria-hlp-service code builder
 
-on:
-  release:
-    types:
-      - created
+# on:
+#   release:
+#     types:
+#       - created
 
 jobs:
   parse_phase:
@@ -46,6 +46,12 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GH_PAT_GHCR }}
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DO_TOKEN }}
+    - name: Login to Digital Ocean Container Registry
+      run: doctl registry login --expiry-seconds 300
     # fix for "buildx failed with: error: invalid tag "ghcr.io/MindHunter86/anilibria-hlp-service:latest": repository name must be lowercase"
     # https://github.community/t/additional-function-s-lowercase-uppercase/140632
     - name: Get lowercase repository name
@@ -56,7 +62,9 @@ jobs:
       with:
         push: true
         context: anilibria-hlp-service
-        tags: ghcr.io/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
+        tags: |
+          ghcr.io/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
+          registry.digitalocean.com/anilibria/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
         # cache-from: type=gha
         # cache-to: type=gha
   binary_build_pahse:
@@ -103,3 +111,26 @@ jobs:
         tag_name: ${{ needs.parse_phase.outputs.build_tag }}
         files: ./anilibria-hlp-service-${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.extention }}
         token: ${{ secrets.GH_PAT_RELEASES }}
+  do_deploy_phase:
+    name: Deploy Service to the Docker App Platform
+    runs-on: ubuntu-latest
+    needs: [ parse_phase ]
+    steps:
+    - name: Get lowercase repository name
+      run: |
+        echo "GH_LWREPONAME=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+    - name: DigitalOcean App Platform deployment
+      uses: digitalocean/app_action@v1.1.5
+      with:
+        app_name: hlp-service
+        token: ${{ secrets.DO_TOKEN }}
+        images: '[
+            {
+              "name": "sample-golang",
+              "image":{
+                "registry_type": "DOCR",
+                "repository": "${{ env.GH_LWREPONAME }}",
+                "tag": "${{ needs.parse_phase.outputs.build_tag }}"
+              },
+            },
+          ]'
