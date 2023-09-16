@@ -126,8 +126,7 @@ jobs:
       with:
         app_name: hlp-service
         token: ${{ secrets.DO_TOKEN }}
-        images: |
-        '[{
+        images: '[{
             "name": "hlp-service",
             "registry_type": "DOCR",
             "registry": "anilibria",
