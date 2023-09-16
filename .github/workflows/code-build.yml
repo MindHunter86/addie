@@ -17,7 +17,8 @@ jobs:
       build_tag: ${{ steps.get-tag-from-ref.outputs.build_tag }}
     steps:
     - id: get-tag-from-ref
-      run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
+      # run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
+      run: echo "::set-output name=build_tag::test_build"
     - run: |
         cat <<-EOF
           Github Actions outputs debug:
