@@ -128,8 +128,10 @@ jobs:
         token: ${{ secrets.DO_TOKEN }}
         images: '[{
             "name": "hlp-service",
-            "registry_type": "DOCR",
-            "registry": "anilibria",
-            "repository": "${{ env.GH_LWREPONAME }}",
-            "tag": "${{ needs.parse_phase.outputs.build_tag }}"
+            "image": {
+              "registry_type": "DOCR",
+              "registry": "anilibria",
+              "repository": "${{ env.GH_LWREPONAME }}",
+              "tag": "${{ needs.parse_phase.outputs.build_tag }}"
+            }
           }]'
