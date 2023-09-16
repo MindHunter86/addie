@@ -126,9 +126,11 @@ jobs:
       with:
         app_name: hlp-service
         token: ${{ secrets.DO_TOKEN }}
-        images: '[{
-              "name": "hlp-service",
-              "repository": "registry.digitalocean.com/anilibria/${{ env.GH_LWREPONAME }}",
-              "tag": "${{ needs.parse_phase.outputs.build_tag }}"
-            }
-          ]'
+        images: |
+        '[{
+            "name": "hlp-service",
+            "registry_type": "DOCR",
+            "registry": "anilibria",
+            "repository": "${{ env.GH_LWREPONAME }}",
+            "tag": "${{ needs.parse_phase.outputs.build_tag }}"
+          }]'
