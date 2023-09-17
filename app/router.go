@@ -147,6 +147,8 @@ func (m *App) fiberConfigure() {
 
 	// Routes
 
+	m.fb.Get("/health", m.fbHndAppHealth)
+
 	// group api - /api
 	api := m.fb.Group("/api", basicauth.New(baConfig))
 	api.Post("logger/level", m.fbHndApiLoggerLevel)

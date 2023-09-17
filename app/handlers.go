@@ -13,6 +13,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
+func (*App) fbHndAppHealth(ctx *fiber.Ctx) error {
+	return ctx.SendStatus(fiber.StatusOK)
+}
+
 func (*App) getBalancersClusterArg(ctx *fiber.Ctx) (cluster balancer.BalancerCluster, e error) {
 	var buf string
 	if buf = ctx.Query("cluster"); buf == "" {
