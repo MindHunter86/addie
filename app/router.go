@@ -10,6 +10,7 @@ import (
 
 	"github.com/MindHunter86/anilibria-hlp-service/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
@@ -136,10 +137,18 @@ func (m *App) fiberConfigure() {
 		return c.Next()
 	})
 
+	// API Basic Auth config
+	creds := gCli.String("api-credentials")
+	baConfig := basicauth.Config{
+		Users: map[string]string{
+			strings.Split(creds, ":")[0]: strings.Split(creds, ":")[1],
+		},
+	}
+
 	// Routes
 
 	// group api - /api
-	api := m.fb.Group("/api")
+	api := m.fb.Group("/api", basicauth.New(baConfig))
 	api.Post("logger/level", m.fbHndApiLoggerLevel)
 	api.Post("limiter/switch", m.fbHndApiLimiterSwitch)
 

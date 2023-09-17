@@ -188,6 +188,11 @@ func main() {
 			EnvVars:     []string{"SIGN_SECRET"},
 			DefaultText: "CHANGE DEFAULT SECRET",
 		},
+		&cli.StringFlag{
+			Name:  "api-credentials",
+			Usage: "internal /api credentials in `username`:`password` format",
+			Value: "admin:admin",
+		},
 
 		// consul settings
 		&cli.BoolFlag{

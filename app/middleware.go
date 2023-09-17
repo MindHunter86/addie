@@ -45,7 +45,7 @@ const (
 // 	}
 // }
 
-// API precondition check
+// App precondition check
 func (m *App) fbMidAppPreCond(ctx *fiber.Ctx) (skip bool) {
 	m.lapRequestTimer(ctx, utils.FbReqTmrPreCond)
 	var errs appMidError
