@@ -218,6 +218,16 @@ func main() {
 			Name:  "consul-kv-prefix",
 			Value: fmt.Sprintf("anilibria/%s", app.Name),
 		},
+		&cli.StringFlag{
+			Name:  "consul-http-username",
+			Usage: "username for consul HTTP API Basic Auth",
+			Value: "",
+		},
+		&cli.StringFlag{
+			Name:  "consul-http-password",
+			Usage: "password for consul HTTP API Basic Auth",
+			Value: "",
+		},
 	}
 
 	app.Action = func(c *cli.Context) (e error) {

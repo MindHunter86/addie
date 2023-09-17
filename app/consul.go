@@ -36,6 +36,14 @@ var (
 func newConsulClient(balancers ...balancer.Balancer) (client *consulClient, e error) {
 	cfg := capi.DefaultConfig()
 
+	username, password := gCli.String("consul-http-username"), gCli.String("consul-http-password")
+	if username != "" || password != "" {
+		cfg.HttpAuth = &capi.HttpBasicAuth{
+			Username: username,
+			Password: password,
+		}
+	}
+
 	cfg.Address = gCli.String("consul-address")
 	if cfg.Address == "" {
 		gLog.Warn().Msg("given consul address could not be empty")
