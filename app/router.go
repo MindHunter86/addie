@@ -147,7 +147,9 @@ func (m *App) fiberConfigure() {
 
 	// Routes
 
-	m.fb.Get("/health", m.fbHndAppHealth)
+	m.fb.Get("/health", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusOK)
+	})
 
 	// group api - /api
 	api := m.fb.Group("/api", basicauth.New(baConfig))
