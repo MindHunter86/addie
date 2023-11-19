@@ -44,9 +44,6 @@ jobs:
             BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
             BUILD_GOTAG: ${{ steps.gotag-selector.outputs.BUILD_GOTAG }}
             BUILD_GOTIME: ${{ steps.gotime-selector.outputs.BUILD_GOTIME }}
-            BUILD_TAG: ${{ needs.parse_phase.outputs.BUILD_TAG }}
-            BUILD_GOTAG: ${{ needs.parse_phase.outputs.BUILD_GOTAG }}
-            BUILD_GOTIME: ${{ needs.parse_phase.outputs.BUILD_GOTIME }}
           EOF
 
   docker_build_by_depot_phase:
