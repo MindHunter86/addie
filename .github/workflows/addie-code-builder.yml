@@ -27,11 +27,11 @@ jobs:
         with:
           fetch-depth: 0
       - id: tag-selector
-        run: echo "BUILD_TAG=${GITHUB_REF#refs/*/}"
+        run: echo "BUILD_TAG=${GITHUB_REF#refs/*/}" >> "$GITHUB_OUTPUT"
       - id: gotag-selector
-        run: echo "BUILD_GOTAG=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
+        run: echo "BUILD_GOTAG=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')" >> "$GITHUB_OUTPUT"
       - id: gotime-selector
-        run: echo "BUILD_GOTIME=$(date --rfc-3339=seconds)"
+        run: echo "BUILD_GOTIME=$(date --rfc-3339=seconds)" >> "$GITHUB_OUTPUT"
       # - id: get-tag-from-ref
       #   run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
       # - id: get-tag-from-ref-go
