@@ -17,17 +17,18 @@ jobs:
       JOB_REF: ${{ github.ref }}
     outputs:
       BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
-      BUILD_GOTAG: ${{ steps.tag-selector.outputs.BUILD_GOTAG }}
-      BUILD_GOTIME: ${{ steps.tag-selector.outputs.BUILD_GOTIME }}
+      BUILD_GOTAG: ${{ steps.gotag-selector.outputs.BUILD_GOTAG }}
+      BUILD_GOTIME: ${{ steps.gotime-selector.outputs.BUILD_GOTIME }}
       # build_tag: ${{ steps.get-tag-from-ref.outputs.build_tag }}
       # build_tag_go: "${{ steps.get-tag-from-ref-go.outputs.build_tag }}"
       # build_time_go: "${{ steps.get_build_time.outputs.build_time }}"
     steps:
+      - uses: actions/checkout@v3
       - id: tag-selector
         run: echo "BUILD_TAG=${GITHUB_REF#refs/*/}"
       - id: gotag-selector
         run: echo "BUILD_GOTAG=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
-      - id: buildtime-selector
+      - id: gotime-selector
         run: echo "BUILD_GOTIME=$(date --rfc-3339=seconds)"
       # - id: get-tag-from-ref
       #   run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
@@ -39,8 +40,8 @@ jobs:
           cat <<-EOF
             Github Actions outputs debug:
             BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
-            BUILD_GOTAG: ${{ steps.tag-selector.outputs.BUILD_GOTAG }}
-            BUILD_GOTIME: ${{ steps.tag-selector.outputs.BUILD_GOTIME }}
+            BUILD_GOTAG: ${{ steps.gotag-selector.outputs.BUILD_GOTAG }}
+            BUILD_GOTIME: ${{ steps.gotime-selector.outputs.BUILD_GOTIME }}
           EOF
 
   docker_build_by_depot_phase:
