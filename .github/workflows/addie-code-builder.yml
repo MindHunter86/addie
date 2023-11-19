@@ -16,22 +16,32 @@ jobs:
     env:
       JOB_REF: ${{ github.ref }}
     outputs:
-      build_tag: ${{ steps.get-tag-from-ref.outputs.build_tag }}
-      build_tag_go: "${{ steps.get-tag-from-ref-go.outputs.build_tag }}"
-      build_time_go: "${{ steps.get_build_time.outputs.build_time }}"
+      BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
+      BUILD_GOTAG: ${{ steps.tag-selector.outputs.BUILD_GOTAG }}
+      BUILD_GOTIME: ${{ steps.tag-selector.outputs.BUILD_GOTIME }}
+      # build_tag: ${{ steps.get-tag-from-ref.outputs.build_tag }}
+      # build_tag_go: "${{ steps.get-tag-from-ref-go.outputs.build_tag }}"
+      # build_time_go: "${{ steps.get_build_time.outputs.build_time }}"
     steps:
-    - id: get-tag-from-ref
-      run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
-    - id: get-tag-from-ref-go
-      run: echo "::set-output name=build_tag::$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
-    - id: get_build_time
-      run: echo "::set-output name=build_time::$(date --rfc-3339=seconds)"
-    - run: |
-        cat <<-EOF
-          Github Actions outputs debug:
-          Triggired tag - ${{ github.ref }}
-          Build Tag - ${{ steps.get-tag-from-ref.outputs.build_tag }}
-        EOF
+      - id: tag-selector
+        run: echo "BUILD_TAG=${GITHUB_REF#refs/*/}"
+      - id: gotag-selector
+        run: echo "BUILD_GOTAG=$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
+      - id: buildtime-selector
+        run: echo "BUILD_GOTIME=$(date --rfc-3339=seconds)"
+      # - id: get-tag-from-ref
+      #   run: echo "::set-output name=build_tag::${GITHUB_REF#refs/*/}"
+      # - id: get-tag-from-ref-go
+      #   run: echo "::set-output name=build_tag::$(git describe --long | sed 's/\([^-]*-g\)/r\1/;s/-/./g')"
+      # - id: get_build_time
+      #   run: echo "::set-output name=build_time::$(date --rfc-3339=seconds)"
+      - run: |
+          cat <<-EOF
+            Github Actions outputs debug:
+            BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
+            BUILD_GOTAG: ${{ steps.tag-selector.outputs.BUILD_GOTAG }}
+            BUILD_GOTIME: ${{ steps.tag-selector.outputs.BUILD_GOTIME }}
+          EOF
 
   docker_build_by_depot_phase:
     name: Build standalone binary and docker image
@@ -59,10 +69,10 @@ jobs:
         with:
           push: true
           project: ztpzwz2463
-          tags: ghcr.io/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.build_tag }}
+          tags: ghcr.io/${{ env.GH_LWREPONAME }}:${{ needs.parse_phase.outputs.BUILD_TAG }}
           build-args: |
-            GOAPP_MAIN_VERSION=${{ needs.parse_phase.outputs.build_tag_go }}
-            GOAPP_MAIN_BUILDTIME=${{ needs.parse_phase.outputs.build_time_go }}
+            GOAPP_MAIN_VERSION=${{ needs.parse_phase.outputs.BUILD_GOTAG }}
+            GOAPP_MAIN_BUILDTIME=${{ needs.parse_phase.outputs.BUILD_GOTIME }}
       - name: Telegram notify
         run: |
           cat <<- EOF | /usr/bin/curl -s -XPOST "https://api.telegram.org/${{ secrets.TGRM_BOT_SECRET }}/sendMessage" \
@@ -105,7 +115,7 @@ jobs:
     - name: Download all required imports
       run: go mod download
     - name: Build source code for ${{ matrix.goos }} ${{ matrix.goarch }}
-      run: go build -ldflags="-s -w -X main.version=${{ needs.parse_phase.outputs.build_tag_go }} -X main.buildtime=${{ needs.parse_phase.outputs.build_time_go }}" -o ./addie-${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.extention }}
+      run: go build -ldflags="-s -w -X main.version='${{ needs.parse_phase.outputs.BUILD_GOTAG }}' -X 'main.buildtime=${{ needs.parse_phase.outputs.BUILD_GOTAG }}'" -o ./addie-${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.extention }}
       env:
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
@@ -114,6 +124,6 @@ jobs:
     - name: Upload release asset
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ needs.parse_phase.outputs.build_tag }}
+        tag_name: ${{ needs.parse_phase.outputs.BUILD_TAG }}
         files: ./addie-${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.extention }}
         token: ${{ secrets.GH_PAT_RELEASES }}
