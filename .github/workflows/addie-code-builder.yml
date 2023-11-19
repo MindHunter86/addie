@@ -23,7 +23,9 @@ jobs:
       # build_tag_go: "${{ steps.get-tag-from-ref-go.outputs.build_tag }}"
       # build_time_go: "${{ steps.get_build_time.outputs.build_time }}"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - id: tag-selector
         run: echo "BUILD_TAG=${GITHUB_REF#refs/*/}"
       - id: gotag-selector
@@ -42,6 +44,9 @@ jobs:
             BUILD_TAG: ${{ steps.tag-selector.outputs.BUILD_TAG }}
             BUILD_GOTAG: ${{ steps.gotag-selector.outputs.BUILD_GOTAG }}
             BUILD_GOTIME: ${{ steps.gotime-selector.outputs.BUILD_GOTIME }}
+            BUILD_TAG: ${{ needs.parse_phase.outputs.BUILD_TAG }}
+            BUILD_GOTAG: ${{ needs.parse_phase.outputs.BUILD_GOTAG }}
+            BUILD_GOTIME: ${{ needs.parse_phase.outputs.BUILD_GOTIME }}
           EOF
 
   docker_build_by_depot_phase:
@@ -54,7 +59,7 @@ jobs:
       packages: write
     needs: [ parse_phase ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: depot/setup-action@v1
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
