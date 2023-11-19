@@ -89,6 +89,9 @@ jobs:
   matrix_binary_build_pahse:
     name: Build standalone binaries for linux. windows, mac OS
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     needs: [ parse_phase ]
     strategy:
       max-parallel: 20 # github free plan value
@@ -129,4 +132,4 @@ jobs:
       with:
         tag_name: ${{ needs.parse_phase.outputs.BUILD_TAG }}
         files: ./addie-${{ matrix.goos }}.${{ matrix.goarch }}${{ matrix.extention }}
-        token: ${{ secrets.GH_PAT_RELEASES }}
+        token: ${{ secrets.GITHUB_TOKEN }}
