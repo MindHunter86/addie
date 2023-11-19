@@ -30,7 +30,7 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 WORKDIR /usr/local/bin/
-COPY --from=build --chown=root:nobody --chmod=0550 /addie addie
+COPY --from=build --chown=root:nobody --chmod=0550 /usr/sources/addie/addie addie
 
 USER nobody:nobody
 ENTRYPOINT ["/usr/local/bin/addie"]
