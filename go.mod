@@ -9,7 +9,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.9
 	github.com/rs/zerolog v1.31.0
 	github.com/spaolacci/murmur3 v1.1.0
-	github.com/urfave/cli/v2 v2.25.7
+	github.com/urfave/cli/v2 v2.26.0
 	golang.org/x/net v0.18.0
 )
 
