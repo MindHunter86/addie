@@ -120,6 +120,8 @@ func (m *Runtime) ApplyPatch(patch *RuntimePatch) (e error) {
 	switch patch.Type {
 	case RuntimePatchLottery:
 		e = patch.ApplyLotteryChance(&m.Config)
+	case RuntimePatchA5bility:
+		e = patch.ApplyA5bility(&m.Config)
 
 	case RuntimePatchQuality:
 		e = patch.ApplyQualityLevel(&m.Config)
@@ -130,12 +132,8 @@ func (m *Runtime) ApplyPatch(patch *RuntimePatch) (e error) {
 		e = patch.ApplySwitch(&m.Config, ConfigParamBlocklist)
 	case RuntimePatchLimiter:
 		e = patch.ApplySwitch(&m.Config, ConfigParamLimiter)
-
-		// !!!
-	case RuntimePatchA5bility:
-		e = m.applyA5bility(patch.Patch)
 	case RuntimePatchStdoutAccess:
-		e = m.applyStdoutAccess(patch.Patch)
+		e = patch.ApplySwitch(&m.Config, ConfigParamStdoutAccess)
 
 	default:
 		panic("internal error - undefined runtime patch type")
@@ -218,6 +216,21 @@ func (m *RuntimePatch) ApplyLotteryChance(st *ConfigStorage) (e error) {
 	return
 }
 
+func (m *RuntimePatch) ApplyA5bility(st *ConfigStorage) (e error) {
+	var percent int
+	if percent, e = strconv.Atoi(string(m.Patch)); e != nil {
+		return
+	}
+
+	if percent < 0 || percent > 100 {
+		log.Warn().Int("percent", percent).Msg("percent could not be less than 0 and more than 100")
+		return
+	}
+
+	log.Info().Msgf("runtime patch has been applied for A5bility with %d", percent)
+	return st.SetValue(ConfigParamA5bility, percent)
+}
+
 func (m *Runtime) StatsPrint() {
 	for uid := range ConfigParamDefaults {
 		name, ok := GetNameByConfigParam[uid]
@@ -282,43 +295,3 @@ func (m *Runtime) StatsPrint() {
 
 //		return buf
 //	}
-func (m *Runtime) applyA5bility(input []byte) (e error) {
-	var percent int
-	if percent, e = strconv.Atoi(string(input)); e != nil {
-		return
-	}
-
-	if percent < 0 || percent > 100 {
-		log.Warn().Int("percent", percent).Msg("percent could not be less than 0 and more than 100")
-		return
-	}
-
-	log.Info().Msgf("runtime config - applied cluster availability %s", string(input))
-
-	m.updateA5bility(percent)
-	return
-}
-
-func (m *Runtime) applyStdoutAccess(input []byte) (e error) {
-	var enabled int
-	if enabled, e = strconv.Atoi(string(input)); e != nil {
-		return
-	}
-
-	log.Trace().Msgf("runtime config - limiter apply value %d", enabled)
-
-	switch enabled {
-	case 0:
-		fallthrough
-	case 1:
-		m.updateStdoutAccess(enabled)
-
-		log.Info().Msg("runtime config - stdout-accesslog status updated")
-		log.Debug().Msgf("apply stdout-accesslog - updated value - %d", enabled)
-	default:
-		log.Warn().Int("enabled", enabled).
-			Msg("runtime config - stdout-accesslog could not be non 0 or non 1")
-		return
-	}
-	return
-}

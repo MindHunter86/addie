@@ -51,7 +51,6 @@ func (m *App) fbMidBalanceCond(ctx *fiber.Ctx) (skip bool) {
 
 	var errs appMidError
 
-<<<<<<< HEAD
 	gLog.Trace().Interface("hdrs", ctx.GetReqHeaders()).Msg("debug")
 	switch h := ctx.GetReqHeaders(); {
 	case strings.TrimSpace(h[apiHeaderUri][0]) == "":
@@ -66,16 +65,19 @@ func (m *App) fbMidBalanceCond(ctx *fiber.Ctx) (skip bool) {
 		errs = errs | errMidAppPreHeaderServer
 		ctx.Locals("errors", errs)
 		return
-=======
-	// parse and test given chunk uri
-	huri := strings.TrimSpace(ctx.Get(apiHeaderUri))
-	if huri == "" {
-		errs = errs | errMidAppPreHeaderUri
-	} else if !m.chunkRegexp.Match([]byte(huri)) {
-		errs = errs | errMidAppPreUriRegexp
-	} else {
-		ctx.Locals("uri", huri)
->>>>>>> v1.4.2_broken_balancer
+
+		// !!!
+		// !!!
+		// !!!
+		// !!!
+		// // parse and test given chunk uri
+		// huri := strings.TrimSpace(ctx.Get(apiHeaderUri))
+		// if huri == "" {
+		// 	errs = errs | errMidAppPreHeaderUri
+		// } else if !m.chunkRegexp.Match([]byte(huri)) {
+		// 	errs = errs | errMidAppPreUriRegexp
+		// } else {
+		// 	ctx.Locals("uri", huri)
 	}
 
 	if strings.HasPrefix(ctx.Path(), "/videos/media/ts") {
@@ -129,7 +131,7 @@ func (m *App) fbMidAppFakeQuality(ctx *fiber.Ctx) error {
 }
 
 // if return value == true - Balance() will be skipped
-func (m *App) fbMidAppBalancerLottery(_ *fiber.Ctx) bool {
+func (m *App) fbMidAppBalancerLottery(ctx *fiber.Ctx) bool {
 	lottery, ok, e := m.runtime.Config.GetValue(runtime.ConfigParamLottery)
 	if !ok || e != nil {
 		rlog(ctx).Warn().Msg(e.Error())

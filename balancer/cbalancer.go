@@ -182,7 +182,13 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	m.Lock()
 	defer m.Unlock()
 
-	avail, _ := m.runtime.GetClusterA5bility()
+	// !!!
+	// !!!
+	// !!!
+	// !!!
+
+	val, _, _ := m.runtime.Config.GetValue(runtime.ConfigParamA5bility)
+	avail := val.(int)
 	m.ips, m.size = m.upstream.getIps(&m.ulock)
 
 	if (dwn != 0 && dwn*100/m.size > (100-avail)) || m.size == 0 {

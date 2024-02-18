@@ -88,8 +88,6 @@ func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 			fiber.MethodPost,
 		},
 
-		DisableDefaultContentType: true,
-
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
 			// reject invalid requests
 			if strings.TrimSpace(c.Hostname()) == "" {
@@ -178,7 +176,9 @@ func (m *App) Bootstrap() (e error) {
 	gCtx = context.WithValue(gCtx, utils.ContextKeyBlocklist, m.blocklist)
 
 	// runtime
-	m.runtime = runtime.NewRuntime(gCtx)
+	if m.runtime, e = runtime.NewRuntime(gCtx); e != nil {
+		return
+	}
 	gCtx = context.WithValue(gCtx, utils.ContextKeyRuntime, m.runtime)
 
 	// balancer V2
@@ -277,7 +277,7 @@ func rlog(c *fiber.Ctx) *zerolog.Logger {
 }
 
 func (m *App) rsyslog(c *fiber.Ctx) *zerolog.Logger {
-	if en, ok := m.runtime.GetClusterStdoutAccess(); ok && en == 0 {
+	if val, ok, _ := m.runtime.Config.GetValue(runtime.ConfigParamStdoutAccess); ok && val.(int) == 0 {
 		l := c.Locals("logger").(*zerolog.Logger).Output(m.syslogWriter)
 		return &l
 	}
