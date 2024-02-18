@@ -3,14 +3,15 @@ package balancer
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"math"
-	"math/rand"
 	"net"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/MindHunter86/addie/runtime"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/rs/zerolog"
@@ -19,13 +20,16 @@ import (
 )
 
 type ClusterBalancer struct {
-	log *zerolog.Logger
-	ccx *cli.Context
+	log     *zerolog.Logger
+	ccx     *cli.Context
+	runtime *runtime.Runtime
 
 	cluster BalancerCluster
 
 	ulock    sync.RWMutex
 	upstream *upstream
+
+	isDown bool
 
 	sync.RWMutex
 	size int
@@ -38,9 +42,19 @@ func NewClusterBalancer(ctx context.Context, cluster BalancerCluster) *ClusterBa
 	return &ClusterBalancer{
 		log:      ctx.Value(utils.ContextKeyLogger).(*zerolog.Logger),
 		ccx:      ctx.Value(utils.ContextKeyCliContext).(*cli.Context),
+		runtime:  ctx.Value(utils.ContextKeyRuntime).(*runtime.Runtime),
 		cluster:  cluster,
 		upstream: &upstream,
 	}
+}
+
+func SetMaxTries(max uint) error {
+	if max > 10 || max == 0 {
+		return errors.New("balancer - max tries could not be more than 10 or == 0")
+	}
+
+	MaxTries = uint8(max)
+	return nil
 }
 
 func (m *ClusterBalancer) GetClusterName() string {
@@ -54,95 +68,86 @@ func (m *ClusterBalancer) GetClusterName() string {
 	}
 }
 
-func (m *ClusterBalancer) BalanceRandom(force bool) (_ string, server *BalancerServer, e error) {
-	var ip *net.IP
-	if ip = m.getRandomServer(force); ip == nil {
-		e = ErrUpstreamUnavailable
+func (m *ClusterBalancer) rLock(rel ...bool) (e error) {
+	if rel = append(rel, false); rel[0] {
+		m.RUnlock()
 		return
 	}
 
-	server, ok := m.upstream.getServer(&m.ulock, ip.String())
-	if !ok || server == nil {
-		panic("balance result could not be find in balancer's upstream")
-	} else if server.isDown {
-		e = ErrServerUnavailable
-	} else {
-		server.statRequest()
+	if !m.TryRLock() {
+		e = NewError(m, errLockMiss).SetFlag(IsRetriable)
 	}
-
-	return ip.String(), server, e
+	return
 }
 
-func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string) (_ string, server *BalancerServer, e error) {
-	var key string
-	if key, e = m.getKeyFromChunkName(&chunkname); e != nil {
-		m.log.Debug().Err(e).Msgf("chunkname - '%s'; fallback to legacy balancing", chunkname)
+func (m *ClusterBalancer) IsDown() (dwn bool, e error) {
+	if e = m.rLock(); e != nil {
 		return
 	}
+	defer m.rLock(true)
 
-	var ip *net.IP
-	if ip = m.getServer(murmur3.Sum128([]byte(prefix + key))); ip == nil {
-		e = ErrUpstreamUnavailable
-		return
-	}
-
-	server, ok := m.upstream.getServer(&m.ulock, ip.String())
-	if !ok || server == nil {
-		panic("balance result could not be find in balancer's upstream")
-	} else if server.isDown {
-		e = ErrServerUnavailable
-	} else {
-		server.statRequest()
-	}
-
-	return ip.String(), server, e
+	dwn, e = m.isDown, NewError(m, errUpstreamIsDown).SetFlag(IsReroutable)
+	return
 }
 
-func (*ClusterBalancer) getKeyFromChunkName(chunkname *string) (key string, e error) {
+func (m *ClusterBalancer) getChunkKey(chunkname *string) (key string, e error) {
 	if strings.Contains(*chunkname, "_") {
 		key = strings.Split(*chunkname, "_")[1]
 	} else if strings.Contains(*chunkname, "fff") {
 		key = strings.ReplaceAll(*chunkname, "fff", "")
-	} else {
-		e = ErrUnparsableChunk
 	}
 
+	if key = strings.TrimSpace(key); key == "" {
+		e = NewErrorF(m, errUnparsableChunk, chunkname)
+	}
 	return
 }
 
-func (m *ClusterBalancer) getServer(idx1, idx2 uint64) (ip *net.IP) {
-	if !m.TryRLock() {
-		m.log.Warn().Msg("could not get lock for reading upstream; fallback to legacy balancing")
+func (m *ClusterBalancer) getServer(idx1, idx2 uint64, coll uint8) (ip *net.IP, e error) {
+	if e = m.rLock(); e != nil {
 		return
 	}
-	defer m.RUnlock()
+	defer m.rLock(true)
 
 	if m.size == 0 {
+		e = NewError(m, errUndefined+": m.size == 0").SetFlag(IsRetriable)
 		return
 	}
 
-	idx3 := idx1 % uint64(m.size)
-	idx4 := idx2 % uint64(m.size)
-	idx0 := idx3 + idx4
-
+	// by default coll = 0, but if balancer receive errors: coll += 1 (limited by const MaxTries)
+	// ? maybe `MaxTries^coll` is not needed; use `coll` only?
+	idx0 := (idx1 % uint64(m.size)) + (idx2 % uint64(m.size)) + uint64(MaxTries^coll)
 	ip = m.ips[idx0%uint64(m.size)]
-	return ip
+	return
 }
 
-func (m *ClusterBalancer) getRandomServer(force bool) (ip *net.IP) {
-	if !force && !m.TryRLock() {
-		m.log.Error().Msg("could not get lock for reading upstream and force flag is false")
-		return
-	}
-	defer m.RUnlock()
-
-	if m.size == 0 {
-		m.log.Error().Msg("could not get random server because of empty upstream")
+func (m *ClusterBalancer) BalanceByChunkname(prefix, chunkname string, try uint8) (_ string, server *BalancerServer, e error) {
+	var dwn bool
+	if dwn, e = m.IsDown(); dwn {
 		return
 	}
 
-	ip = m.ips[rand.Intn(m.size)]
-	return
+	var key string
+	if key, e = m.getChunkKey(&chunkname); e != nil {
+		return
+	}
+
+	var ip *net.IP
+	idx1, idx2 := murmur3.Sum128([]byte(prefix + key))
+	if ip, e = m.getServer(idx1, idx2, try); e != nil {
+		return
+	}
+
+	var ok bool
+	if server, ok = m.upstream.getServer(&m.ulock, ip.String()); !ok {
+		e = NewError(m, errUndefined).SetFlag(IsReroutable)
+	} else if server.isDown {
+		e = NewErrorF(m, errServerIsDown, server.Name).SetFlag(IsBackupable)
+	} else {
+		server.statRequest()
+	}
+
+	return ip.String(), server, e
 }
 
 func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
@@ -162,9 +167,10 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	}
 
 	// find differs and disable dead servers
-	curr := m.upstream.copy(&m.ulock)
+	curr, dwn := m.upstream.copy(&m.ulock), 0
 	for _, server := range curr {
 		if _, ok := servers[server.Name]; !ok {
+			dwn++
 			server.disable()
 			m.log.Trace().Msgf("[II] server - %s : disabled", server.Name)
 		} else {
@@ -176,7 +182,19 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	m.Lock()
 	defer m.Unlock()
 
+	avail, _ := m.runtime.GetClusterA5bility()
 	m.ips, m.size = m.upstream.getIps(&m.ulock)
+
+	if (dwn != 0 && dwn*100/m.size > (100-avail)) || m.size == 0 {
+		m.isDown = true
+		m.log.Warn().Msgf("calc - (%d * 100 / %d), avail(calc) - %d, size - %d) cluster was marked as `offline`",
+			dwn, m.size, 100-avail, m.size)
+	} else if m.isDown {
+		m.isDown = false
+		m.log.Info().Msgf("calc - (%d * 100 / %d), avail(calc) - %d, size - %d) cluster was marked as `online`",
+			dwn, m.size, 100-avail, m.size)
+	}
+
 	m.log.Trace().Interface("ips", m.ips).Msg("[II]")
 	m.log.Trace().Interface("size", m.size).Msgf("[II]")
 }
@@ -227,6 +245,8 @@ func (m *ClusterBalancer) GetStats() io.Reader {
 			isDownHumanize(server.isDown), server.lastChanged.Format("2006-01-02T15:04:05.000"),
 		})
 	}
+
+	tb.AppendFooter(table.Row{"", "", "", "", "", "CLUSTER OFFLINE", isDownHumanize(m.isDown), ""})
 
 	tb.Style().Options.SeparateRows = true
 

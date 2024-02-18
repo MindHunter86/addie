@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -36,8 +37,36 @@ import (
 // @host localhost:8080
 // @BasePath /
 func (m *App) fiberConfigure() {
+
+	// panic recover for all handlers
+	m.fb.Use(recover.New(recover.Config{
+		EnableStackTrace: true,
+		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
+			rlog(c).Error().Str("request", c.Request().String()).Bytes("stack", debug.Stack()).
+				Msg("panic has been caught")
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("panic: %v\n%s\n", e, debug.Stack())) //nolint:errcheck // This will never fail
+
+			c.Status(fiber.StatusInternalServerError)
+		},
+	}))
+
+	// request id
+	m.fb.Use(requestid.New())
+
+	// prefixed logger initialization
+	m.fb.Use(func(c *fiber.Ctx) error {
+		l := gLog.With().Str("id", c.Locals("requestid").(string)).Logger()
+		c.Locals("logger", &l)
+		return c.Next()
+	})
+
 	// time collector + logger
 	m.fb.Use(func(c *fiber.Ctx) (e error) {
+		if !strings.HasPrefix(c.Path(), "/videos/media/ts") &&
+			!strings.HasPrefix(c.Path(), "/api/balancer/cluster") {
+			// rlog(c).Trace().Str("path", c.Path()).Msg("non sign request detected, skipping timings...")
+			return c.Next()
+		}
 
 		c.SetUserContext(context.WithValue(
 			c.UserContext(),
@@ -47,33 +76,29 @@ func (m *App) fiberConfigure() {
 
 		start, e := time.Now(), c.Next()
 		stop := time.Now()
+		total := stop.Sub(start).Round(time.Microsecond)
 
-		if !strings.HasPrefix(c.Path(), "/videos/media/ts") {
-			gLog.Trace().Msg("non sign request detected, skipping timings...")
-			return
+		status, lvl, err := c.Response().StatusCode(), zerolog.InfoLevel, new(fiber.Error)
+		if errors.As(e, &err) || status >= fiber.StatusInternalServerError {
+			status, lvl = err.Code, zerolog.WarnLevel
 		}
 
-		total := stop.Sub(start).Round(time.Microsecond)
-		setup := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrBeforeRoute)).Round(time.Microsecond)
-		routing := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrPreCond)).Round(time.Microsecond)
-		precond := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrBlocklist)).Round(time.Microsecond)
-		blist := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrFakeQuality)).Round(time.Microsecond)
-		fquality := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrConsulLottery)).Round(time.Microsecond)
-		clottery := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrReqSign)).Round(time.Microsecond)
-		reqsign := stop.Sub(stop).Round(time.Microsecond)
+		if rlog(c).GetLevel() <= zerolog.DebugLevel {
+			routing := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrPreCond)).Round(time.Microsecond)
+			precond := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrBlocklist)).Round(time.Microsecond)
+			blist := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrFakeQuality)).Round(time.Microsecond)
+			fquality := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrConsulLottery)).Round(time.Microsecond)
+			clottery := stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrReqSign)).Round(time.Microsecond)
+			reqsign := stop.Sub(stop).Round(time.Microsecond)
 
-		reqsign = clottery - reqsign
-		clottery = fquality - clottery
-		fquality = blist - fquality
-		blist = precond - blist
-		precond = routing - precond
-		routing = setup - routing
-		setup = total - setup
+			reqsign = clottery - reqsign
+			clottery = fquality - clottery
+			fquality = blist - fquality
+			blist = precond - blist
+			precond = routing - precond
+			routing = total - routing
 
-		if gLog.GetLevel() <= zerolog.DebugLevel {
-			gLog.Debug().
-				Str("id", c.Locals("requestid").(string)).
-				Dur("setup", setup).
+			rlog(c).Debug().
 				Dur("routing", routing).
 				Dur("precond", precond).
 				Dur("blist", blist).
@@ -84,18 +109,17 @@ func (m *App) fiberConfigure() {
 				Dur("timer", time.Since(stop).Round(time.Microsecond)).
 				Msg("")
 
-			gLog.Trace().Msgf(
-				"Total: %s, Setup %s; Routing %s; PreCond %s; Blocklist %s; FQuality %s; CLottery %s; ReqSign %s;",
-				total, setup, routing, precond, blist, fquality, clottery, reqsign)
-			gLog.Trace().Msgf("Time Collector %s", time.Since(stop).Round(time.Microsecond))
+			rlog(c).Trace().Msgf(
+				"Total: %s; Routing %s; PreCond %s; Blocklist %s; FQuality %s; CLottery %s; ReqSign %s;",
+				total, routing, precond, blist, fquality, clottery, reqsign)
+			rlog(c).Trace().Msgf("Time Collector %s", time.Since(stop).Round(time.Microsecond))
 		}
 
-		if gLog.GetLevel() <= zerolog.InfoLevel {
-			gLog.Info().
-				Int("status", c.Response().StatusCode()).
+		if rlog(c).GetLevel() <= zerolog.InfoLevel || status != fiber.StatusOK {
+			m.rsyslog(c).WithLevel(lvl).
+				Int("status", status).
 				Str("method", c.Method()).
 				Str("path", c.Path()).
-				Str("id", c.Locals("requestid").(string)).
 				Str("ip", c.IP()).
 				Dur("latency", total).
 				Str("user-agent", c.Get(fiber.HeaderUserAgent)).
@@ -105,23 +129,10 @@ func (m *App) fiberConfigure() {
 		return
 	})
 
-	// panic recover for all handlers
-	m.fb.Use(recover.New(recover.Config{
-		EnableStackTrace: true,
-		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
-			gLog.Error().Str("request", c.Request().String()).Bytes("stack", debug.Stack()).
-				Msg("panic has been caught")
-			_, _ = os.Stderr.WriteString(fmt.Sprintf("panic: %v\n%s\n", e, debug.Stack())) //nolint:errcheck // This will never fail
-		},
-	}))
-
 	// debug
 	if gCli.Bool("http-pprof-enable") {
 		m.fb.Use(pprof.New())
 	}
-
-	// request id
-	m.fb.Use(requestid.New())
 
 	// favicon disable
 	m.fb.Use(favicon.New(favicon.ConfigDefault))
@@ -143,12 +154,6 @@ func (m *App) fiberConfigure() {
 			}, ","),
 		}))
 	}
-
-	// time collector - Before routing
-	m.fb.Use(func(c *fiber.Ctx) error {
-		m.lapRequestTimer(c, utils.FbReqTmrBeforeRoute)
-		return c.Next()
-	})
 
 	// Routes
 
@@ -180,13 +185,22 @@ func (m *App) fiberConfigure() {
 	blist.Post("/switch", gController.BlocklistSwitch)
 	blist.Post("/reset", gController.BlocklistReset)
 
+	// group upstream - /api/balancer
+	upstr := api.Group("/balancer")
+	upstr.Get("/stats", m.fbHndApiBalancerStats)
+	upstr.Post("/stats/reset", m.fbHndApiStatsReset)
+	upstr.Post("/reset", m.fbHndApiBalancerReset)
+
+	upstrCluster := upstr.Group("/cluster", skip.New(m.fbHndApiPreCondErr, m.fbMidBalanceCond))
+	upstrCluster.Get("/cache-nodes", m.fbHndBlcNodesBalance)
+	// m.fbHndBlcNodesBalance,
+	// m.fbHndBlcNodesBalanceFallback)
+
 	// group media - /videos/media/ts
-	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
+	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidBalanceCond))
 
-	// group media - blocklist
+	// group media - blocklist && limiter
 	media.Use(m.fbMidAppBlocklist)
-
-	// group media - limiter
 	media.Use(limiter.New(limiter.Config{
 		Next: func(c *fiber.Ctx) bool {
 			if limiting, ok, e := m.runtime.Config.GetValue(runtime.ConfigParamLimiter); e != nil {

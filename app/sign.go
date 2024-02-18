@@ -1,7 +1,7 @@
 package app
 
 import (
-	"crypto/md5"
+	"crypto/md5" // skipcq: GSC-G501 md5 used in nginx, no choise to fix it
 	"encoding/base64"
 	"strconv"
 	"strings"
@@ -31,7 +31,7 @@ func (*App) getHlpExtra(uri, sip, uid string) (expires, extra string) {
 	buf := expires + uri + sip + uid + " " + gCli.String("link-secret")
 
 	// md5 sum `openssl md5 -binary`
-	md5sum := md5.Sum([]byte(buf))
+	md5sum := md5.Sum([]byte(buf)) // skipcq: GSC-G401 md5 used in nginx, no choise to fix it
 
 	// base64 encoding `openssl base64`
 	b64buf := base64.StdEncoding.EncodeToString(md5sum[:])

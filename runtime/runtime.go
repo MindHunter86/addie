@@ -21,6 +21,8 @@ const (
 	RuntimePatchBlocklist
 	RuntimePatchBlocklistIps
 	RuntimePatchLimiter
+	RuntimePatchA5bility
+	RuntimePatchStdoutAccess
 )
 
 var (
@@ -32,6 +34,8 @@ var (
 		utils.CfgBlockList:         RuntimePatchBlocklistIps,
 		utils.CfgBlockListSwitcher: RuntimePatchBlocklist,
 		utils.CfgLimiterSwitcher:   RuntimePatchLimiter,
+		utils.CfgClusterA5bility:   RuntimePatchA5bility,
+		utils.CfgStdoutAccessLog:   RuntimePatchStdoutAccess,
 	}
 
 	// intenal
@@ -43,6 +47,8 @@ var (
 		RuntimePatchBlocklist:    "blocklist switch",
 		RuntimePatchBlocklistIps: "blocklist ips",
 		RuntimePatchLimiter:      "limiter switch",
+		RuntimePatchA5bility:     "balancer's cluster availability",
+		RuntimePatchStdoutAccess: "stdout access log switcher",
 	}
 )
 
@@ -124,6 +130,12 @@ func (m *Runtime) ApplyPatch(patch *RuntimePatch) (e error) {
 		e = patch.ApplySwitch(&m.Config, ConfigParamBlocklist)
 	case RuntimePatchLimiter:
 		e = patch.ApplySwitch(&m.Config, ConfigParamLimiter)
+
+		// !!!
+	case RuntimePatchA5bility:
+		e = m.applyA5bility(patch.Patch)
+	case RuntimePatchStdoutAccess:
+		e = m.applyStdoutAccess(patch.Patch)
 
 	default:
 		panic("internal error - undefined runtime patch type")
@@ -268,5 +280,45 @@ func (m *Runtime) StatsPrint() {
 
 // 	tb.Style().Options.SeparateRows = true
 
-// 	return buf
-// }
+//		return buf
+//	}
+func (m *Runtime) applyA5bility(input []byte) (e error) {
+	var percent int
+	if percent, e = strconv.Atoi(string(input)); e != nil {
+		return
+	}
+
+	if percent < 0 || percent > 100 {
+		log.Warn().Int("percent", percent).Msg("percent could not be less than 0 and more than 100")
+		return
+	}
+
+	log.Info().Msgf("runtime config - applied cluster availability %s", string(input))
+
+	m.updateA5bility(percent)
+	return
+}
+
+func (m *Runtime) applyStdoutAccess(input []byte) (e error) {
+	var enabled int
+	if enabled, e = strconv.Atoi(string(input)); e != nil {
+		return
+	}
+
+	log.Trace().Msgf("runtime config - limiter apply value %d", enabled)
+
+	switch enabled {
+	case 0:
+		fallthrough
+	case 1:
+		m.updateStdoutAccess(enabled)
+
+		log.Info().Msg("runtime config - stdout-accesslog status updated")
+		log.Debug().Msgf("apply stdout-accesslog - updated value - %d", enabled)
+	default:
+		log.Warn().Int("enabled", enabled).
+			Msg("runtime config - stdout-accesslog could not be non 0 or non 1")
+		return
+	}
+	return
+}

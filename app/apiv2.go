@@ -47,7 +47,7 @@ func (*ApiClient) debugHttpHandshake(data interface{}, withBody ...bool) {
 }
 
 func (*ApiClient) setApiRequestHeaders(req *http.Request) *http.Request {
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:99.0) Gecko/20100101 Firefox/99.0 Addie/"+gCli.App.Version)
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Accept-Language", "en,ru;q=0.5")
 	// req.Header.Set("Accept-Encoding", "gzip, deflate, br")

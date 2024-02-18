@@ -64,7 +64,7 @@ func NewApiClient() (*ApiClient, error) {
 		}),
 
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: gCli.Bool("http-client-insecure"),
+			InsecureSkipVerify: gCli.Bool("http-client-insecure"), // skipcq: GSC-G402 false-positive
 			MinVersion:         tls.VersionTLS12,
 			MaxVersion:         tls.VersionTLS12,
 		},

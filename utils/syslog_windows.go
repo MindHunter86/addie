@@ -3,10 +3,11 @@
 package utils
 
 import (
-	"github.com/rs/zerolog"
+	"io"
+
 	"github.com/urfave/cli/v2"
 )
 
-func SetUpSyslogWriter(c *cli.Context) (_ *zerolog.Logger, e error) {
+func SetUpSyslogWriter(_ *cli.Context) (io.Writer, error) {
 	return nil, nil
 }

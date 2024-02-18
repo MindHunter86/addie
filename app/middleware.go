@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"errors"
 	"math/rand"
 	"strings"
@@ -40,17 +39,19 @@ const (
 // 	// client IP parsing
 // 	cip := string(ctx.Request.Header.Peek(fasthttp.HeaderXForwardedFor))
 // 	if cip == "" || cip == "127.0.0.1" {
-// 		gLog.Debug().Str("remote_addr", ctx.RemoteIP().String()).Str("x_forwarded_for", cip).Msg("")
+// 		rlog(ctx).Debug().Str("remote_addr", ctx.RemoteIP().String()).Str("x_forwarded_for", cip).Msg("")
 // 		m.hlpRespondError(&ctx.Response, errHlpBadIp)
 // 		return
 // 	}
 // }
 
-// API precondition check
-func (m *App) fbMidAppPreCond(ctx *fiber.Ctx) (skip bool) {
-	m.lapRequestTimer(ctx, utils.FbReqTmrPreCond)
+func (m *App) fbMidBalanceCond(ctx *fiber.Ctx) (skip bool) {
+	m.lapRequestTimer(ctx, utils.FbReqTmrBlcPreCond)
+	rlog(ctx).Trace().Interface("hdrs", ctx.GetReqHeaders()).Msg("cache-XXX-internal precond balancer")
+
 	var errs appMidError
 
+<<<<<<< HEAD
 	gLog.Trace().Interface("hdrs", ctx.GetReqHeaders()).Msg("debug")
 	switch h := ctx.GetReqHeaders(); {
 	case strings.TrimSpace(h[apiHeaderUri][0]) == "":
@@ -65,26 +66,41 @@ func (m *App) fbMidAppPreCond(ctx *fiber.Ctx) (skip bool) {
 		errs = errs | errMidAppPreHeaderServer
 		ctx.Locals("errors", errs)
 		return
+=======
+	// parse and test given chunk uri
+	huri := strings.TrimSpace(ctx.Get(apiHeaderUri))
+	if huri == "" {
+		errs = errs | errMidAppPreHeaderUri
+	} else if !m.chunkRegexp.Match([]byte(huri)) {
+		errs = errs | errMidAppPreUriRegexp
+	} else {
+		ctx.Locals("uri", huri)
+>>>>>>> v1.4.2_broken_balancer
 	}
 
-	ctx.Locals("uid", strings.TrimSpace(ctx.Get(apiHeaderId)))
-	ctx.Locals("srv", strings.TrimSpace(ctx.Get(apiHeaderServer)))
+	if strings.HasPrefix(ctx.Path(), "/videos/media/ts") {
+		var id, server string
 
-	// match uri
-	if !m.chunkRegexp.Match([]byte(ctx.Get(apiHeaderUri))) {
-		ctx.Locals("errors", errs|errMidAppPreUriRegexp)
-		return
+		if id = strings.TrimSpace(ctx.Get(apiHeaderId)); id == "" {
+			errs = errs | errMidAppPreHeaderId
+		} else if server = strings.TrimSpace(ctx.Get(apiHeaderServer)); server == "" {
+			errs = errs | errMidAppPreHeaderServer
+		}
+
+		ctx.Locals("srv", server)
+		ctx.Locals("uid", id)
 	}
 
-	return true
+	ctx.Locals("errors", errs)
+	return errs == 0
 }
 
 // fake quality check
 func (m *App) fbMidAppFakeQuality(ctx *fiber.Ctx) error {
 	m.lapRequestTimer(ctx, utils.FbReqTmrFakeQuality)
-	gLog.Trace().Msg("fake quality check")
+	rlog(ctx).Trace().Msg("fake quality check")
 
-	uri := ctx.Get(apiHeaderUri)
+	uri := ctx.Locals("uri").(string)
 	tsr := NewTitleSerieRequest(uri)
 
 	if !tsr.isValid() {
@@ -94,13 +110,13 @@ func (m *App) fbMidAppFakeQuality(ctx *fiber.Ctx) error {
 
 	buf, ok, e := m.runtime.Config.GetValue(runtime.ConfigParamQuality)
 	if !ok || e != nil {
-		gLog.Warn().
+		rlog(ctx).Warn().
 			Msg("could not get lock for reading quality or softer says no; skipping fake quality chain")
 		return ctx.Next()
 	}
 
 	quality := buf.(utils.TitleQuality)
-	gLog.Debug().Uint16("tsr", uint16(tsr.getTitleQuality())).Uint16("coded", uint16(quality)).
+	rlog(ctx).Debug().Uint16("tsr", uint16(tsr.getTitleQuality())).Uint16("coded", uint16(quality)).
 		Msg("quality check")
 	if tsr.getTitleQuality() <= quality {
 		ctx.Locals("uri", uri)
@@ -116,7 +132,7 @@ func (m *App) fbMidAppFakeQuality(ctx *fiber.Ctx) error {
 func (m *App) fbMidAppBalancerLottery(_ *fiber.Ctx) bool {
 	lottery, ok, e := m.runtime.Config.GetValue(runtime.ConfigParamLottery)
 	if !ok || e != nil {
-		gLog.Warn().Msg(e.Error())
+		rlog(ctx).Warn().Msg(e.Error())
 		return !ok // always true
 	}
 
@@ -124,105 +140,13 @@ func (m *App) fbMidAppBalancerLottery(_ *fiber.Ctx) bool {
 }
 
 func (m *App) fbMidAppBalance(ctx *fiber.Ctx) (e error) {
-	gLog.Trace().Msg("consul lottery winner, rewriting destination server...")
+	m.lapRequestTimer(ctx, utils.FbReqTmrConsulLottery)
+	rlog(ctx).Trace().Msg("consul lottery winner, rewriting destination server...")
 
-	var server *balancer.BalancerServer
-	uri, reqid := []byte(ctx.Locals("uri").(string)), ctx.Locals("requestid").(string)
-	// uri := []byte(ctx.Locals("uri").(string))
-
-	prefixbuf := bytes.NewBuffer(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkTitleId])
-	prefixbuf.Write(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkEpisodeId])
-	prefixbuf.Write(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkQualityLevel])
-
-	// chunkname, prefix := string(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkName]), prefixbuf.String()
-
-	// for _, cluster := range []balancer.Balancer{m.cloudBalancer, m.bareBalancer} {
-	// 	// TODO
-	// 	// ? do we need the failover with RandomBalancing ???
-	// 	// var fallback bool
-
-	// 	// get all servers for balancing
-	// 	var status *balancer.Status
-	// 	if e = cluster.Balance(chunkname, prefix); e == nil {
-	// 		gLog.Error().Msg("there is no status with payload and error from balancer")
-	// 	}
-
-	// 	if errors.As(e, &status) {
-	// 		if e = status.Err(); e != nil {
-	// 			gLog.Error().Err(e).Interface("cluster", status.Cluster()).Msg(status.Descr())
-	// 			continue
-	// 		}
-	// 	} else {
-	// 		gLog.Error().Err(e).Msg("undefined error from balancer")
-	// 	}
-
-	// 	// parse given servers
-	// 	for _, server := range status.Servers {
-	// 		// if all ok (if no errors) - save destination and go to the next fiber handler:
-	// 		ctx.Locals("srv",
-	// 			strings.ReplaceAll(server.Name, "-node", "")+"."+gCli.String("consul-entries-domain"))
-
-	// 		return ctx.Next()
-	// 	}
-	// }
-
-	for _, cluster := range []balancer.Balancer{m.cloudBalancer, m.bareBalancer} {
-		var fallback bool
-
-		for fails := 0; fails <= gCli.Int("balancer-server-max-fails"); fails++ {
-
-			// so if fails limit reached - use new cluster or fallback to baremetal random balancing
-			if fails == gCli.Int("balancer-server-max-fails") {
-				if fallback {
-					gLog.Error().Str("req", reqid).Str("cluster", cluster.GetClusterName()).
-						Msg("internal balancer error; too many balance errors; using fallback func()...")
-					return m.fbMidAppBalanceFallback(ctx)
-				} else {
-					fallback = true
-					gLog.Error().Str("req", reqid).Str("cluster", cluster.GetClusterName()).
-						Msg("internal balancer error; too many balance errors; using next cluster...")
-					break
-				}
-			}
-
-			// trying to balance with giver cluster
-			_, server, e = cluster.BalanceByChunk(
-				prefixbuf.String(),
-				string(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkName]))
-
-			if errors.Is(e, balancer.ErrServerUnavailable) {
-				gLog.Trace().Err(e).Int("fails", fails).Str("req", reqid).
-					Str("cluster", cluster.GetClusterName()).Msg("trying to roll new server...")
-				continue
-			} else if errors.Is(e, balancer.ErrUpstreamUnavailable) {
-				gLog.Trace().Err(e).Int("fails", fails).Str("req", reqid).Msg("temporary upstream error")
-				continue
-			} else if e != nil {
-				gLog.Error().Err(e).Str("req", reqid).
-					Str("cluster", cluster.GetClusterName()).Msg("could not balance; undefined error")
-				break
-			}
-
-			// if all ok (if no errors) - save destination and go to the next fiber handler:
-			ctx.Locals("srv",
-				strings.ReplaceAll(server.Name, "-node", "")+"."+gCli.String("consul-entries-domain"))
-
-			return ctx.Next()
-		}
+	if e = m.balanceFiberRequest(ctx, []balancer.Balancer{m.cloudBalancer, m.bareBalancer}); e != nil {
+		return
 	}
 
-	// if we here - no alive balancers, so return error
-	return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-}
-
-func (m *App) fbMidAppBalanceFallback(ctx *fiber.Ctx) error {
-	server, e := m.getServerFromRandomBalancer(ctx)
-	if e != nil {
-		return e
-	}
-
-	ctx.Locals("srv",
-		strings.ReplaceAll(server.Name, "-node", "")+"."+gCli.String("consul-entries-domain"))
 	return ctx.Next()
 }
 
@@ -239,28 +163,9 @@ func (m *App) fbMidAppBlocklist(ctx *fiber.Ctx) error {
 	}
 
 	if m.blocklist.IsExists(ctx.IP()) {
-		gLog.Debug().Str("cip", ctx.IP()).Msg("client has been banned, forbid request")
+		rlog(ctx).Debug().Str("cip", ctx.IP()).Msg("client has been banned, forbid request")
 		return fiber.NewError(fiber.StatusForbidden)
 	}
 
 	return ctx.Next()
-}
-
-// balancer api
-func (m *App) fbMidBlcPreCond(ctx *fiber.Ctx) bool {
-	m.lapRequestTimer(ctx, utils.FbReqTmrBlcPreCond)
-	gLog.Trace().Interface("hdrs", ctx.GetReqHeaders()).Msg("cache-node-internal balancer")
-
-	var errs appMidError
-
-	if huri := strings.TrimSpace(ctx.Get(apiHeaderUri)); huri == "" {
-		errs = errs | errMidAppPreHeaderUri
-	} else if !m.chunkRegexp.Match([]byte(huri)) {
-		errs = errs | errMidAppPreUriRegexp
-	} else {
-		ctx.Locals("uri", &huri)
-	}
-
-	ctx.Locals("errors", errs)
-	return errs == 0
 }

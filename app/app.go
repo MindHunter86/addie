@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"regexp"
@@ -50,12 +51,16 @@ type App struct {
 	bareBalancer  balancer.Balancer
 
 	chunkRegexp *regexp.Regexp
+
+	syslogWriter io.Writer
 }
 
-func NewApp(c *cli.Context, l *zerolog.Logger) (app *App) {
+func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 	gCli, gLog = c, l
 
 	app = &App{}
+	app.syslogWriter = s
+
 	app.fb = fiber.New(fiber.Config{
 		EnableTrustedProxyCheck: len(gCli.String("http-trusted-proxies")) > 0,
 		TrustedProxies:          strings.Split(gCli.String("http-trusted-proxies"), ","),
@@ -83,9 +88,26 @@ func NewApp(c *cli.Context, l *zerolog.Logger) (app *App) {
 			fiber.MethodPost,
 		},
 
-		// ErrorHandler: func(ctx *fiber.Ctx, err error) error {
-		// 	return ctx.SendStatus(fiber.StatusInternalServerError)
-		// },
+		DisableDefaultContentType: true,
+
+		ErrorHandler: func(c *fiber.Ctx, err error) error {
+			// reject invalid requests
+			if strings.TrimSpace(c.Hostname()) == "" {
+				gLog.Warn().Msgf("invalid request from %s", c.Context().Conn().RemoteAddr().String())
+				gLog.Debug().Msgf("invalid request: %+v ; error - %+v", c, err)
+				return c.Context().Conn().Close()
+			}
+
+			c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
+
+			var e *fiber.Error
+			if !errors.As(err, &e) {
+				return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
+			}
+
+			rlog(c).Error().Msgf("%v", err)
+			return c.SendStatus(e.Code)
+		},
 	})
 
 	// storage setup for fiber's limiter
@@ -156,13 +178,14 @@ func (m *App) Bootstrap() (e error) {
 	gCtx = context.WithValue(gCtx, utils.ContextKeyBlocklist, m.blocklist)
 
 	// runtime
-	if m.runtime, e = runtime.NewRuntime(gCtx); e != nil {
-		return
-	}
+	m.runtime = runtime.NewRuntime(gCtx)
 	gCtx = context.WithValue(gCtx, utils.ContextKeyRuntime, m.runtime)
 
 	// balancer V2
 	gLog.Info().Msg("bootstrap balancer_v2 subsystems...")
+	if e = balancer.SetMaxTries(gCli.Uint("balancer-max-tries")); e != nil {
+		return
+	}
 
 	m.bareBalancer = balancer.NewClusterBalancer(gCtx, balancer.BalancerClusterNodes)
 	m.cloudBalancer = balancer.NewClusterBalancer(gCtx, balancer.BalancerClusterCloud)
@@ -247,4 +270,17 @@ LOOP:
 	if e := m.fb.ShutdownWithContext(gCtx); e != nil {
 		gLog.Error().Err(e).Msg("fiber Shutdown() error")
 	}
+}
+
+func rlog(c *fiber.Ctx) *zerolog.Logger {
+	return c.Locals("logger").(*zerolog.Logger)
+}
+
+func (m *App) rsyslog(c *fiber.Ctx) *zerolog.Logger {
+	if en, ok := m.runtime.GetClusterStdoutAccess(); ok && en == 0 {
+		l := c.Locals("logger").(*zerolog.Logger).Output(m.syslogWriter)
+		return &l
+	}
+
+	return rlog(c)
 }

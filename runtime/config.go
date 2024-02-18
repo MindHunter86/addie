@@ -33,6 +33,8 @@ const (
 	ConfigParamBlocklist
 	ConfigParamBlocklistIps
 	ConfigParamLimiter
+	ConfigParamA5bility
+	ConfigParamStdoutAccess
 
 	_configParamMaxSize
 )
@@ -43,6 +45,8 @@ var ConfigParamDefaults = map[ConfigParam]interface{}{
 	ConfigParamBlocklist:    0,
 	ConfigParamBlocklistIps: []string{},
 	ConfigParamLimiter:      0,
+	ConfigParamA5bility:     100,
+	ConfigParamStdoutAccess: 1,
 }
 
 var GetNameByConfigParam = map[ConfigParam]string{
