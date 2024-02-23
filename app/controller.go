@@ -12,6 +12,8 @@ import (
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
+
+	_ "github.com/MindHunter86/addie/docs"
 )
 
 type Controller struct {
@@ -69,11 +71,24 @@ func (m *Controller) getBalancerByString(input string) (_ balancer.BalancerClust
 	return cluster, e
 }
 
+// @title		Get ConfigStorage Stats
+// @version	1.0
+// @BasePath	/
 func (m *Controller) GetConfigStorageStats(c *fiber.Ctx) error {
 	m.runtime.StatsPrint()
 	return respondPlainWithStatus(c, fiber.StatusNoContent)
 }
 
+// @title			Fiber Example API
+// @version		1.0
+// @description	This is a sample swagger for Fiber
+// @termsOfService	http://swagger.io/terms/
+// @contact.name	API Support
+// @contact.email	fiber@swagger.io
+// @license.name	Apache 2.0
+// @license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+// @host			localhost:8080
+// @BasePath		/
 func (m *Controller) GetBalancerStats(c *fiber.Ctx) (e error) {
 	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
 	if e != nil {
@@ -84,6 +99,18 @@ func (m *Controller) GetBalancerStats(c *fiber.Ctx) (e error) {
 	return respondPlainWithStatus(c, fiber.StatusOK)
 }
 
+// ListAccounts lists all existing accounts
+//
+//	@Summary		List accounts
+//	@Description	get accounts
+//	@Tags			accounts
+//	@Accept			json
+//	@Produce		json
+//	@Param			q	query		string	false	"name search by q"	Format(email)
+//	@Success		204	{array} string
+//	@Failure		404	{object}	string
+//	@Failure		500	{object}	string
+//	@Router			/accounts [get]
 func (m *Controller) BalancerStatsReset(c *fiber.Ctx) (e error) {
 	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
 	if e != nil {
