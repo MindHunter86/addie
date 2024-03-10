@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"net"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/MindHunter86/addie/utils"
@@ -73,15 +72,17 @@ func (m *ClusterBalancer) BalanceRandom() (_ string, server *BalancerServer, e e
 	return ip.String(), server, e
 }
 
-func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string) (_ string, server *BalancerServer, e error) {
-	var key string
-	if key, e = m.getKeyFromChunkName(&chunkname); e != nil {
+func (m *ClusterBalancer) BalanceByChunk(prefixbuf *bytes.Buffer, chunkname []byte) (_ string, server *BalancerServer, e error) {
+	var key []byte
+	if key, e = m.getKeyFromChunkName(chunkname); e != nil {
 		m.log.Debug().Err(e).Msgf("chunkname - '%s'; fallback to legacy balancing", chunkname)
 		return
 	}
 
+	prefixbuf.Write(key)
+
 	var ip *net.IP
-	if ip = m.getServer(murmur3.Sum128([]byte(prefix + key))); ip == nil {
+	if ip = m.getServer(murmur3.Sum128(prefixbuf.Bytes())); ip == nil {
 		e = ErrUpstreamUnavailable
 		return
 	}
@@ -98,13 +99,13 @@ func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string) (_ string, se
 	return ip.String(), server, e
 }
 
-func (*ClusterBalancer) getKeyFromChunkName(chunkname *string) (key string, e error) {
-	if strings.Contains(*chunkname, "_") {
-		key = strings.Split(*chunkname, "_")[1]
-	} else if strings.Contains(*chunkname, "fff") {
-		key = strings.ReplaceAll(*chunkname, "fff", "")
+func (*ClusterBalancer) getKeyFromChunkName(chunkname []byte) (key []byte, _ error) {
+	if bytes.Contains(chunkname, []byte("_")) {
+		key = bytes.Split(chunkname, []byte("_"))[1]
+	} else if bytes.Contains(chunkname, []byte("fff")) {
+		key = bytes.ReplaceAll(chunkname, []byte("fff"), []byte(""))
 	} else {
-		e = ErrUnparsableChunk
+		return nil, ErrUnparsableChunk
 	}
 
 	return

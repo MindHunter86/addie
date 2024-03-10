@@ -271,6 +271,10 @@ func (m *App) rsyslog(c *fiber.Ctx) (l *zerolog.Logger) {
 	return c.Locals("syslogger").(*zerolog.Logger)
 }
 
+// func rlog(c *fiber.Ctx) *zerolog.Logger {
+// 	return c.Locals("logger").(*zerolog.Logger)
+// }
+
 func rlog(c *fiber.Ctx) *zerolog.Logger {
-	return c.Locals("logger").(*zerolog.Logger)
+	return zerolog.Ctx(c.UserContext())
 }

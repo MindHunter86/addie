@@ -229,8 +229,9 @@ func main() {
 			Value: "libria.fun",
 		},
 		&cli.StringFlag{
-			Name:  "consul-kv-prefix",
-			Value: fmt.Sprintf("anilibria/%s", app.Name),
+			Name:    "consul-kv-prefix",
+			Value:   fmt.Sprintf("anilibria/%s", app.Name),
+			EnvVars: []string{"CONSUL_PREFIX"},
 		},
 
 		&cli.IntFlag{

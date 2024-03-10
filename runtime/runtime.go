@@ -143,6 +143,8 @@ func (m *RuntimePatch) ApplyLogLevel(st *Storage, param StorageParam) (e error) 
 func (m *RuntimePatch) ApplyBlocklistIps(_ *Storage, bl *blocklist.Blocklist) (e error) {
 	buf := string(m.Patch)
 
+	// TODO
+	// !!! - fix unused code
 	if buf == "_" {
 		bl.Reset()
 		log.Info().Msg("runtime patch has been for Blocklist.Reset")

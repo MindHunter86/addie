@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"runtime/debug"
 	"strings"
@@ -38,6 +37,10 @@ import (
 // @host localhost:8080
 // @BasePath /
 func (m *App) fiberConfigure() {
+	// debug
+	if gCli.Bool("http-pprof-enable") {
+		m.fb.Use(pprof.New())
+	}
 
 	// panic recover for all handlers
 	m.fb.Use(recover.New(recover.Config{
@@ -57,19 +60,19 @@ func (m *App) fiberConfigure() {
 	// prefixed logger initialization
 	// - we send logs in syslog and stdout by default,
 	// - but if access-log-stdout is 0 we use syslog output only
-	m.fb.Use(func(c *fiber.Ctx) error {
-		logger := gLog.With().Str("id", c.Locals("requestid").(string)).Logger().
-			Level(m.runtime.Config.Get(runtime.ParamAccessLevel).(zerolog.Level))
-		syslogger := logger.Output(m.syslogWriter)
+	// m.fb.Use(func(c *fiber.Ctx) error {
+	// 	logger := gLog.With().Str("id", c.Locals("requestid").(string)).Logger().
+	// 		Level(m.runtime.Config.Get(runtime.ParamAccessLevel).(zerolog.Level))
+	// 	syslogger := logger.Output(m.syslogWriter)
 
-		if m.runtime.Config.Get(runtime.ParamAccessStdout).(int) == 0 {
-			logger = logger.Output(io.Discard)
-		}
+	// 	if m.runtime.Config.Get(runtime.ParamAccessStdout).(int) == 0 {
+	// 		logger = logger.Output(io.Discard)
+	// 	}
 
-		c.Locals("logger", &logger)
-		c.Locals("syslogger", &syslogger)
-		return c.Next()
-	})
+	// 	c.Locals("logger", &logger)
+	// 	c.Locals("syslogger", &syslogger)
+	// 	return c.Next()
+	// })
 
 	// time collector + logger
 	m.fb.Use(func(c *fiber.Ctx) (e error) {
@@ -79,11 +82,10 @@ func (m *App) fiberConfigure() {
 			return c.Next()
 		}
 
-		c.SetUserContext(context.WithValue(
-			c.UserContext(),
-			utils.FbReqTmruestTimer,
-			make(map[utils.ContextKey]time.Time),
-		))
+		ctx := context.WithValue(c.UserContext(),
+			utils.FbReqTmruestTimer, make(map[utils.ContextKey]time.Time))
+		ctx = gLog.Hook(&FiberHook{c.Locals("requestid").(string)}).WithContext(ctx)
+		c.SetUserContext(ctx)
 
 		start, e := time.Now(), c.Next()
 		stop := time.Now()
@@ -134,21 +136,16 @@ func (m *App) fiberConfigure() {
 			Str("ip", c.IP()).
 			Dur("latency", total).
 			Str("user-agent", c.Get(fiber.HeaderUserAgent)).Msg("")
-		m.rsyslog(c).WithLevel(lvl).
-			Int("status", status).
-			Str("method", c.Method()).
-			Str("path", c.Path()).
-			Str("ip", c.IP()).
-			Dur("latency", total).
-			Str("user-agent", c.Get(fiber.HeaderUserAgent)).Msg("")
+		// m.rsyslog(c).WithLevel(lvl).
+		// 	Int("status", status).
+		// 	Str("method", c.Method()).
+		// 	Str("path", c.Path()).
+		// 	Str("ip", c.IP()).
+		// 	Dur("latency", total).
+		// 	Str("user-agent", c.Get(fiber.HeaderUserAgent)).Msg("")
 
 		return
 	})
-
-	// debug
-	if gCli.Bool("http-pprof-enable") {
-		m.fb.Use(pprof.New())
-	}
 
 	// favicon disable
 	m.fb.Use(favicon.New(favicon.ConfigDefault))
@@ -240,4 +237,12 @@ func (*App) lapRequestTimer(c *fiber.Ctx, k utils.ContextKey) {
 func (*App) getRequestTimerSegment(c *fiber.Ctx, k utils.ContextKey) time.Time {
 	return c.UserContext().
 		Value(utils.FbReqTmruestTimer).(map[utils.ContextKey]time.Time)[k]
+}
+
+type FiberHook struct {
+	id string
+}
+
+func (m *FiberHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+	e.Str("spanid", m.id)
 }

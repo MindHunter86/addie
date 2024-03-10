@@ -31,9 +31,9 @@ const (
 	CfgBlockList         = "block-list"
 	CfgBlockListSwitcher = "block-list-switcher"
 	CfgLimiterSwitcher   = "limiter-switcher"
-	CfgStdoutAccessLog = "stdout-access-log"
-	CfgAccessLogStdout = "access-log-stdout"
-	CfgAccessLogLevel  = "access-log-level"
+	CfgStdoutAccessLog   = "stdout-access-log"
+	CfgAccessLogStdout   = "access-log-stdout"
+	CfgAccessLogLevel    = "access-log-level"
 )
 
 const (
@@ -70,4 +70,12 @@ func (m *TitleQuality) String() string {
 	default:
 		return ""
 	}
+}
+
+func JoinSize(size int, s ...[]byte) []byte {
+	b, i := make([]byte, size), 0
+	for _, v := range s {
+		i += copy(b[i:], v)
+	}
+	return b
 }
