@@ -3,7 +3,7 @@ module github.com/MindHunter86/addie
 go 1.19
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.4
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/storage/bbolt v1.3.5
 	github.com/gofiber/swagger v1.0.0
 	github.com/hashicorp/consul/api v1.29.1
