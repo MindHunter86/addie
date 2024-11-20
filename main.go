@@ -14,7 +14,7 @@ import (
 	"github.com/rs/zerolog/diode"
 	"github.com/urfave/cli/v2"
 
-	application "github.com/MindHunter86/addie/app"
+	"github.com/MindHunter86/addie/balancer/consistent"
 	"github.com/MindHunter86/addie/utils"
 )
 
@@ -296,7 +296,9 @@ func main() {
 		}
 
 		log.Debug().Msgf("%s (%s) builded %s now is ready...", app.Name, version, buildtime)
-		return application.NewApp(c, &log, syslogWriter).Bootstrap()
+		// return application.NewApp(c, &log, syslogWriter).Bootstrap()
+		consistent.Test()
+		return
 	}
 
 	// TODO sort.Sort of Flags uses too much allocs; temporary disabled
