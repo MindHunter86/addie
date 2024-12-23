@@ -6,7 +6,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/storage/bbolt v1.3.5
 	github.com/gofiber/swagger v1.1.0
-	github.com/hashicorp/consul/api v1.30.0
+	github.com/hashicorp/consul/api v1.31.0
 	github.com/jedib0t/go-pretty/v6 v6.6.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spaolacci/murmur3 v1.1.0
