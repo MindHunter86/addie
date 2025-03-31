@@ -12,7 +12,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/swaggo/swag v1.16.4
 	github.com/urfave/cli/v2 v2.27.5
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 )
 
 require (
