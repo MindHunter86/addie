@@ -1,9 +1,9 @@
 module github.com/MindHunter86/addie
 
-go 1.19
+go 1.23.0
 
 require (
-	github.com/gofiber/fiber/v2 v2.52.6
+	github.com/gofiber/fiber/v2 v2.52.7
 	github.com/gofiber/storage/bbolt v1.3.5
 	github.com/gofiber/swagger v1.1.1
 	github.com/hashicorp/consul/api v1.30.0
