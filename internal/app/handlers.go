@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/MindHunter86/addie/balancer"
-	"github.com/MindHunter86/addie/utils"
+	"github.com/MindHunter86/addie/internal/balancer"
+	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/gofiber/fiber/v2"
 )
 

@@ -14,8 +14,8 @@ import (
 	"github.com/rs/zerolog/diode"
 	"github.com/urfave/cli/v2"
 
-	application "github.com/MindHunter86/addie/app"
-	"github.com/MindHunter86/addie/utils"
+	application "github.com/MindHunter86/addie/internal/app"
+	"github.com/MindHunter86/addie/internal/utils"
 )
 
 var version = "devel" // -ldflags="-X main.version=X.X.X"

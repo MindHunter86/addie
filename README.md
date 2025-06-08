@@ -1,15 +1,15 @@
 # ADDIE
 
-[![Release Build Status](https://github.com/MindHunter86/addie/actions/workflows/addie-code-builder.yml/badge.svg?event=release)](https://github.com/MindHunter86/addie/actions/workflows/addie-code-builder.yml)
-[![CodeQL Status](https://github.com/MindHunter86/addie/actions/workflows/codeql.yml/badge.svg)](https://github.com/MindHunter86/addie/actions/workflows/codeql.yml)
+[![Release Build Status](https://github.com/MindHunter86/addie/internal/actions/workflows/addie-code-builder.yml/badge.svg?event=release)](https://github.com/MindHunter86/addie/internal/actions/workflows/addie-code-builder.yml)
+[![CodeQL Status](https://github.com/MindHunter86/addie/internal/actions/workflows/codeql.yml/badge.svg)](https://github.com/MindHunter86/addie/internal/actions/workflows/codeql.yml)
 [![GoDoc](https://godoc.org/github.com/Mindhunter86/addie?status.svg)](https://godoc.org/github.com/Mindhunter86/addie)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Mindhunter86/addie)](https://goreportcard.com/report/github.com/Mindhunter86/addie)
 [![License](https://img.shields.io/badge/license-MIT%20License-blue.svg)](https://github.com/Mindhunter86/addie/LICENSE)
 
-[![DeepSource](https://app.deepsource.com/gh/MindHunter86/addie.svg/?label=active+issues&show_trend=true&token=QIO6_7ZmufuRCfOD-fHjyQjG)](https://app.deepsource.com/gh/MindHunter86/addie/)
-[![DeepSource](https://app.deepsource.com/gh/MindHunter86/addie.svg/?label=resolved+issues&show_trend=true&token=QIO6_7ZmufuRCfOD-fHjyQjG)](https://app.deepsource.com/gh/MindHunter86/addie/)
+[![DeepSource](https://app.deepsource.com/gh/MindHunter86/addie.svg/?label=active+issues&show_trend=true&token=QIO6_7ZmufuRCfOD-fHjyQjG)](https://app.deepsource.com/gh/MindHunter86/addie/internal/)
+[![DeepSource](https://app.deepsource.com/gh/MindHunter86/addie.svg/?label=resolved+issues&show_trend=true&token=QIO6_7ZmufuRCfOD-fHjyQjG)](https://app.deepsource.com/gh/MindHunter86/addie/internal/)
 [![GitHub issues](https://img.shields.io/github/issues/Mindhunter86/addie.svg)](https://github.com/Mindhunter86/addie/issues)
-[![Current Work](https://img.shields.io/github/milestones/progress-percent/Mindhunter86/addie/3)](https://github.com/MindHunter86/addie/milestone/3)
+[![Current Work](https://img.shields.io/github/milestones/progress-percent/Mindhunter86/addie/3)](https://github.com/MindHunter86/addie/internal/milestone/3)
 
 
 <div>

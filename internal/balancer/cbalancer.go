@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/MindHunter86/addie/utils"
+	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/rs/zerolog"
 	"github.com/spaolacci/murmur3"

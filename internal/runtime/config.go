@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/MindHunter86/addie/utils"
+	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 )
