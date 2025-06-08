@@ -11,32 +11,6 @@ func FlagsInitialization(em bool, aname string) []cli.Flag {
 	f := []cli.Flag{}
 
 	f = []cli.Flag{
-		// common flags
-		&cli.StringFlag{
-			Name:    "log-level",
-			Aliases: []string{"l"},
-			Value:   "debug",
-			Usage:   "levels: trace, debug, info, warn, err, panic, disabled",
-			EnvVars: []string{"LOG_LEVEL"},
-		},
-		&cli.BoolFlag{
-			Name:    "quite",
-			Aliases: []string{"q"},
-			Usage:   "Flag is equivalent to --log-level=quite",
-		},
-		&cli.StringFlag{
-			Name:    "syslog-server",
-			Value:   "",
-			EnvVars: []string{"SYSLOG_ADDRESS"},
-		},
-		&cli.StringFlag{
-			Name:  "syslog-proto",
-			Value: "tcp",
-		},
-		&cli.StringFlag{
-			Name:  "syslog-tag",
-			Value: "",
-		},
 
 		// http client settings
 		&cli.BoolFlag{

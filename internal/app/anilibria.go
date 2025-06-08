@@ -9,6 +9,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/MindHunter86/addie/internal/utils"
+	"github.com/rs/zerolog"
+	"github.com/urfave/cli/v2"
 	"golang.org/x/net/http2"
 )
 
@@ -52,47 +55,54 @@ func (m *apiResponse) Error() string {
 	return m.err.Error()
 }
 
-func NewApiClient() (*ApiClient, error) {
-	defaultTransportDialContext := func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+func NewApiClient(c context.Context) (ac *ApiClient, e error) {
+	cli, log :=
+		utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext),
+		utils.ContextValueExtract[*zerolog.Logger](c, utils.CtxZeroLogger)
+
+	transportDialContext := func(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
 		return dialer.DialContext
 	}
 
-	http1Transport := &http.Transport{
-		DialContext: defaultTransportDialContext(&net.Dialer{
-			Timeout:   gCli.Duration("http-tcp-timeout"),
-			KeepAlive: gCli.Duration("http-keepalive-timeout"),
+	httpt := &http.Transport{
+		DialContext: transportDialContext(&net.Dialer{
+			Timeout:   cli.Duration("http-client-conn-timeout"),
+			KeepAlive: cli.Duration("http-client-idle-timeout"),
 		}),
 
+		TLSHandshakeTimeout: cli.Duration("http-client-ssl-timeout"),
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: gCli.Bool("http-client-insecure"), // skipcq: GSC-G402 false-positive
+			InsecureSkipVerify: cli.Bool("http-client-insecure"), // skipcq: GSC-G402 false-positive
 			MinVersion:         tls.VersionTLS12,
-			MaxVersion:         tls.VersionTLS12,
+			MaxVersion:         tls.VersionTLS13,
 		},
-		TLSHandshakeTimeout: gCli.Duration("http-tls-handshake-timeout"),
 
-		MaxIdleConns:    gCli.Int("http-max-idle-conns"),
-		IdleConnTimeout: gCli.Duration("http-idle-timeout"),
+		ResponseHeaderTimeout: cli.Duration("http-client-write-timeout"),
+
+		MaxIdleConnsPerHost: cli.Int("http-client-max-conns-per-host"),
+		IdleConnTimeout:     cli.Duration("http-client-idle-timeout"),
 
 		DisableCompression: false,
 		DisableKeepAlives:  false,
 		ForceAttemptHTTP2:  true,
 	}
 
-	var httpTransport http.RoundTripper = http1Transport
-	http2Transport, err := http2.ConfigureTransports(http1Transport)
-	if err != nil {
-		httpTransport = http2Transport
-		gLog.Warn().Err(err).Msg("could not upgrade http transport to v2 because of internal error")
+	var http2t *http2.Transport
+	if http2t, e = http2.ConfigureTransports(httpt); e != nil {
+		log.Warn().Msgf("could not upgrade http transport to v2 - %s", e.Error())
+	} else {
+		http2t.ReadIdleTimeout = time.Second // ping is performed at N whenever no frame was received in the meantime
+		http2t.PingTimeout = 3 * time.Second
 	}
 
-	var apiClient = &ApiClient{
+	ac = &ApiClient{
 		http: &http.Client{
-			Timeout:   time.Duration(gCli.Int("http-client-timeout")) * time.Second,
-			Transport: httpTransport,
+			Timeout:   cli.Duration("http-client-conn-timeout") + cli.Duration("http-client-read-timeout"),
+			Transport: httpt,
 		},
 	}
 
-	return apiClient, apiClient.getApiBaseUrl()
+	return ac, ac.getApiBaseUrl()
 }
 
 func (m *ApiClient) getApiBaseUrl() (e error) {
