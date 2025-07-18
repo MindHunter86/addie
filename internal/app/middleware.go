@@ -275,3 +275,11 @@ func (m *App) fbMidBlcPreCond(ctx *fiber.Ctx) bool {
 	ctx.Locals("errors", errs)
 	return errs == 0
 }
+
+// ai url decryption
+func (m *App) fbMidUriDescrypt(c *fiber.Ctx) (e error) {
+	// encdata := bytes.Split(utils.UnsafeBytes(c.Path()), []byte("/"))
+	// decdata := xorEncryptDescrypt(gCli.String("ai-url-decryption-key"))
+
+	return
+}

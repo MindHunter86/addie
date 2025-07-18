@@ -183,6 +183,13 @@ func FlagsInitialization(em bool, aname string) []cli.Flag {
 			Name:  "consul-kv-prefix",
 			Value: fmt.Sprintf("anilibria/%s", aname),
 		},
+
+		// ai decrypt settings
+		&cli.StringFlag{
+			Name:    "ai-url-decryption-key",
+			EnvVars: []string{"AI_DECRYPTION_KEY"},
+			Value:   "IABTJd5oOzBODKUBFkCwrXukd9U5j8gUDlDp2TtJ",
+		},
 	}
 
 	return f

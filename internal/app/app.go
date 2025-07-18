@@ -160,10 +160,11 @@ func (m *App) Bootstrap() (e error) {
 	m.chunkRegexp = regexp.MustCompile(chunksplit)
 
 	// anilibria API
-	gLog.Info().Msg("starting anilibria api client...")
-	if gAniApi, e = NewApiClient(); e != nil {
-		return
-	}
+	// todo tsuzukeru ...
+	// gLog.Info().Msg("starting anilibria api client...")
+	// if gAniApi, e = NewApiClient(); e != nil {
+	// 	return
+	// }
 
 	// fake quality cooler cache
 	gLog.Info().Msg("starting fake quality cache buckets...")
