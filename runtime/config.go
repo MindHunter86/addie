@@ -30,13 +30,13 @@ const (
 )
 
 var ParamDefaults = map[StorageParam]interface{}{
-	ParamLottery:      100,
-	ParamQuality:      utils.TitleQualityHD,
-	ParamBlocklist:    1,
+	ParamLottery:      0,
+	ParamQuality:      utils.TitleQualityFHD,
+	ParamBlocklist:    0,
 	ParamBlocklistIps: []string{},
 	ParamLimiter:      0,
-	ParamAccessStdout: 1,
-	ParamAccessLevel:  zerolog.InfoLevel,
+	ParamAccessStdout: 0,
+	ParamAccessLevel:  zerolog.WarnLevel,
 }
 
 var GetNameByParam = map[StorageParam]string{
