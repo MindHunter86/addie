@@ -1,6 +1,6 @@
 module github.com/MindHunter86/addie
 
-go 1.19
+go 1.23.0
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
@@ -10,7 +10,7 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.6.7
 	github.com/rs/zerolog v1.33.0
 	github.com/spaolacci/murmur3 v1.1.0
-	github.com/swaggo/swag v1.16.4
+	github.com/swaggo/swag v1.16.6
 	github.com/urfave/cli/v2 v2.27.5
 	golang.org/x/net v0.37.0
 )
@@ -54,6 +54,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
+	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
