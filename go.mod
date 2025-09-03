@@ -47,6 +47,7 @@ require (
 	github.com/gofiber/storage/bbolt v1.3.5
 	github.com/hashicorp/consul/api v1.32.0
 	github.com/jedib0t/go-pretty/v6 v6.6.8
+	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/rs/zerolog v1.34.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/urfave/cli/v2 v2.27.7
@@ -69,6 +70,7 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.2 // indirect
+	github.com/k0kubun/colorstring v0.0.0-20150214042306-9440f1994b88 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect

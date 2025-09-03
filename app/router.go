@@ -203,6 +203,9 @@ func (m *App) fiberConfigure() {
 	// group media - /videos/media/ts
 	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
 
+	// serving encrypted m3u8 playlists
+	media.Use(m.fbHndEncrM3U8Playlists)
+
 	// group media - blocklist & limiter
 	media.Use(m.fbMidAppBlocklist)
 	media.Use(limiter.New(limiter.Config{

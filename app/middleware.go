@@ -13,6 +13,7 @@ import (
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
 	futils "github.com/gofiber/fiber/v2/utils"
+	"github.com/k0kubun/pp"
 )
 
 var (
@@ -295,6 +296,10 @@ func (m *App) fbEncryptedReroute(c *fiber.Ctx) (e error) {
 	}
 
 	buf = xorEncryptDecrypt(futils.UnsafeBytes(m.encryptKey), buf)
+	c.Context().SetUserValue(utils.FbReqIsEncrypted, true)
+
+	pp.Println(string(buf))
+
 	c.Path(futils.UnsafeString(buf))
 	return c.RestartRouting()
 }

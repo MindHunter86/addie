@@ -14,6 +14,7 @@ const (
 
 const (
 	FbReqTmruestTimer ContextKey = iota
+	FbReqIsEncrypted
 )
 
 const (

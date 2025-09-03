@@ -3,6 +3,8 @@ package app
 import (
 	"encoding/base64"
 	"slices"
+
+	"github.com/gofiber/utils"
 )
 
 func xorEncryptDecrypt(k, p []byte) []byte {
@@ -49,4 +51,23 @@ func extractBase64Value(dst, src []byte) (_ []byte, e error) {
 	// cut garbage (raw data)
 	dst = dst[:raws]
 	return dst, e
+}
+
+func B64(src []byte) string {
+	var dst []byte
+
+	b64l, b64sz := len(dst), base64.RawURLEncoding.EncodedLen(len(src))
+
+	if cap(dst) < b64sz {
+		dst = append(dst, make([]byte, b64sz-b64l)...)
+	}
+	dst = dst[:b64sz]
+
+	base64.RawURLEncoding.Encode(dst, src)
+
+	// add security bytes for random data protection
+	// dst = m.SetSecurityBytes(dst)
+
+	// respond with temporary b64 slice
+	return utils.UnsafeString(dst)
 }
