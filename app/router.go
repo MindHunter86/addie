@@ -22,9 +22,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/middleware/skip"
 	"github.com/rs/zerolog"
-
-	_ "github.com/MindHunter86/addie/docs"
-	"github.com/gofiber/swagger"
 )
 
 // @title Fiber Example API
@@ -174,7 +171,7 @@ func (m *App) fiberConfigure() {
 	// Routes
 
 	// swagger
-	m.fb.Get("/swagger/*", swagger.HandlerDefault)
+	// m.fb.Get("/swagger/*", swagger.HandlerDefault)
 
 	// group api - /api
 	api := m.fb.Group("/api")
