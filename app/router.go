@@ -197,6 +197,9 @@ func (m *App) fiberConfigure() {
 	blist.Post("/switch", gController.BlocklistSwitch)
 	blist.Post("/reset", gController.BlocklistReset)
 
+	// encrypted links
+	m.fb.Use("/e/", m.fbEncryptedReroute)
+
 	// group media - /videos/media/ts
 	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
 

@@ -12,6 +12,7 @@ import (
 	"github.com/MindHunter86/addie/runtime"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
+	futils "github.com/gofiber/fiber/v2/utils"
 )
 
 var (
@@ -274,4 +275,26 @@ func (m *App) fbMidBlcPreCond(ctx *fiber.Ctx) bool {
 
 	ctx.Locals("errors", errs)
 	return errs == 0
+}
+
+func (m *App) fbEncryptedReroute(c *fiber.Ctx) (e error) {
+	if m.encryptKey == "" {
+		return c.Next()
+	}
+
+	fp := c.Request().URI().Path()
+	p := bytes.Split(fp, []byte("/e/"))
+
+	if len(p) != 2 {
+		return fiber.NewError(fiber.StatusBadRequest, "undefined url detected, encrypted path not found")
+	}
+
+	buf := make([]byte, len(p[1]))
+	if buf, e = extractBase64Value(buf, p[1]); e != nil {
+		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
+	}
+
+	buf = xorEncryptDecrypt(futils.UnsafeBytes(m.encryptKey), buf)
+	c.Path(futils.UnsafeString(buf))
+	return c.RestartRouting()
 }

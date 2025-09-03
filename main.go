@@ -254,6 +254,12 @@ func main() {
 			Name:  "consul-kv-prefix",
 			Value: fmt.Sprintf("anilibria/%s", app.Name),
 		},
+
+		&cli.StringFlag{
+			Name:  "uri-encryption-key",
+			Value: "PpynahncbjJfUF1nEl7kTR1seHdfMisrhWix9418",
+		},
+		// &cli.StringFlag{}
 	}
 
 	app.Action = func(c *cli.Context) (e error) {
