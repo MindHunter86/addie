@@ -22,9 +22,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/fiber/v2/middleware/skip"
 	"github.com/rs/zerolog"
-
-	_ "github.com/MindHunter86/addie/docs"
-	"github.com/gofiber/swagger"
 )
 
 // @title Fiber Example API
@@ -174,7 +171,7 @@ func (m *App) fiberConfigure() {
 	// Routes
 
 	// swagger
-	m.fb.Get("/swagger/*", swagger.HandlerDefault)
+	// m.fb.Get("/swagger/*", swagger.HandlerDefault)
 
 	// group api - /api
 	api := m.fb.Group("/api")
@@ -200,8 +197,14 @@ func (m *App) fiberConfigure() {
 	blist.Post("/switch", gController.BlocklistSwitch)
 	blist.Post("/reset", gController.BlocklistReset)
 
+	// encrypted links
+	m.fb.Use("/e/", m.fbEncryptedReroute)
+
 	// group media - /videos/media/ts
 	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
+
+	// serving encrypted m3u8 playlists
+	media.Use(m.fbHndEncrM3U8Playlists)
 
 	// group media - blocklist & limiter
 	media.Use(m.fbMidAppBlocklist)

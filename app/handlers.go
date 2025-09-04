@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"github.com/MindHunter86/addie/balancer"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
+	"github.com/k0kubun/pp"
 )
 
 var (
@@ -171,4 +173,71 @@ func (m *App) getServerFromRandomBalancer(ctx *fiber.Ctx) (server *balancer.Bala
 	}
 
 	return
+}
+
+func (m *App) fbHndEncrM3U8Playlists(c *fiber.Ctx) (e error) {
+	// if m.encryptKey == "" {
+	// 	return c.Next()
+	// }
+
+	// ! check for URI depcription above
+	// c.Value().(bool) != true ...
+
+	p := c.Request().URI().Path()
+	if !bytes.Equal(p[len(p)-5:], []byte(".m3u8")) {
+		return c.Next()
+	}
+
+	// proxy request to encoder server
+	var body []byte
+	if body, e = gEncoder.fetchM3U8Url(c.Path()); e != nil {
+		pp.Println(e.Error())
+		return
+	}
+
+	// read file contents
+	lineBr := regexp.MustCompile("\r?\n")
+	lines := lineBr.Split(string(body), -1)
+
+	// prepare buffer for rewritten data
+	var buf []byte
+	buf = make([]byte, len(body))
+	buf = buf[:0]
+
+	b := bytes.NewBuffer(buf)
+
+	// line by line encrypt and save file content
+	for _, line := range lines {
+		if line == "" {
+			b.WriteRune('\r')
+			b.WriteRune('\n')
+			continue
+		}
+
+		if line[0] == '#' {
+			b.Write([]byte(line))
+			b.WriteRune('\r')
+			b.WriteRune('\n')
+			continue
+		}
+
+		toenc := "/videos/media/ts/9265/1/1080/" + line
+		enc := xorEncryptDecrypt([]byte(m.encryptKey), []byte(toenc))
+
+		// pp.Println(line)
+
+		b.WriteString("https://cache.libria.fun/e/" + B64(enc))
+		b.WriteRune('\r')
+		b.WriteRune('\n')
+	}
+
+	pp.Printf(b.String())
+
+	// respond with new file
+
+	// todo : maybe cache rewrited file
+
+	return c.SendStatus(200)
+
+	return c.Next()
 }

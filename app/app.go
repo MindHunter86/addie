@@ -34,6 +34,8 @@ var (
 
 	gAniApi *ApiClient
 
+	gEncoder *EncoderClient
+
 	gController *Controller
 )
 
@@ -50,6 +52,8 @@ type App struct {
 
 	chunkRegexp *regexp.Regexp
 
+	encryptKey string
+
 	syslogWriter io.Writer
 }
 
@@ -58,6 +62,9 @@ func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 
 	app = &App{}
 	app.syslogWriter = s
+
+	app.encryptKey = gCli.String("uri-encryption-key")
+	gEncoder = NewEncoderClient(gCli)
 
 	app.fb = fiber.New(fiber.Config{
 		EnableTrustedProxyCheck: len(gCli.String("http-trusted-proxies")) > 0,
@@ -203,7 +210,7 @@ func (m *App) Bootstrap() (e error) {
 
 	// consul bootstrap
 	gLog.Info().Msg("bootstrap consul subsystems...")
-	gofunc(&wg, gConsul.bootstrap)
+	// gofunc(&wg, gConsul.bootstrap)
 
 	// http
 	gofunc(&wg, func() {
