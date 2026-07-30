@@ -124,10 +124,9 @@ func (m *Service) Bootstrap() (e error) {
 		return
 	}
 
-	// ! XXX TODO REVERT
 	// fiber configuration
-	// m.fiberMiddlewareInitialization()
-	// m.fiberRouterInitialization()
+	m.fiberMiddlewareInitialization()
+	m.fiberRouterInitialization()
 
 	// custom listener configuration
 	flisten := func() error {
