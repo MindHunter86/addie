@@ -8,16 +8,23 @@ const (
 	CtxZeroLogger ContextKey = iota
 	CtxCliContext
 	CtxAccsLogger
-
-	CtxChallenge
-	CtxWebRender
-	CtxDatabase
 	CtxStats
-	CtxAnalytics
+
+	CtxController
+
+	CtxBalancers
+	CtxTitleCache
+	CtxBlockList
+
+	CtxRuntime
+	CtxRPatcher
+
+	CtxDatabase
+
+	// CtxAbortFunc
 
 	// internal use only
 	CtxDynamic
-
 	CtxTickerLap
 	CtxTickerTick
 )
@@ -26,14 +33,19 @@ var CKtoa = map[ContextKey]string{
 	CtxZeroLogger: "system logger",
 	CtxCliContext: "cli context",
 	CtxAccsLogger: "access logger",
+	CtxStats:      "stats",
 
-	CtxChallenge: "challenger",
-	CtxWebRender: "webrender",
-	CtxDatabase:  "database",
-	CtxStats:     "stats",
-	CtxAnalytics: "analytics",
+	CtxBalancers:  "balancers",
+	CtxTitleCache: "titles cache",
+	CtxBlockList:  "blocklist",
+
+	CtxRuntime:  "runtime",
+	CtxRPatcher: "request patcher",
+
+	CtxDatabase: "bbolt database",
 
 	// internal use only
+	CtxDynamic:    "",
 	CtxTickerLap:  "",
 	CtxTickerTick: "",
 }

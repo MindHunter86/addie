@@ -10,12 +10,13 @@ func databaseFlags(expertMode bool) []cli.Flag {
 		// TODO - rewrite to path-prefix
 		// TODO - integrate settings from saeko
 
+		// TODO bbolt - temporary disabled
 		// bbolt database settings
-		&cli.StringFlag{
-			Name:     "database-prefix",
-			Category: "Database",
-			Value:    ".",
-		},
+		// &cli.StringFlag{
+		// 	Name:     "database-prefix",
+		// 	Category: "Database",
+		// 	Value:    ".",
+		// },
 
 		// &cli.StringFlag{
 		// 	Name:  "database-path",

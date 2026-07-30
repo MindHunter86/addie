@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -18,7 +17,6 @@ import (
 	"github.com/MindHunter86/addie/internal/runtime"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
-	bolt "github.com/gofiber/storage/bbolt"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
 )
@@ -38,8 +36,7 @@ var (
 )
 
 type App struct {
-	fb     *fiber.App
-	fbstor fiber.Storage
+	fb *fiber.App
 
 	cache     *CachedTitlesBucket
 	blocklist *blocklist.Blocklist
@@ -85,40 +82,7 @@ func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 			fiber.MethodOptions,
 			fiber.MethodPost,
 		},
-
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			// reject invalid requests
-			if strings.TrimSpace(c.Hostname()) == "" {
-				gLog.Warn().Msgf("invalid request from %s", c.Context().Conn().RemoteAddr().String())
-				gLog.Debug().Msgf("invalid request: %+v ; error - %+v", c, err)
-				return c.Context().Conn().Close()
-			}
-
-			c.Set(fiber.HeaderContentType, fiber.MIMETextPlainCharsetUTF8)
-
-			var e *fiber.Error
-			if !errors.As(err, &e) {
-				return c.Status(fiber.StatusInternalServerError).SendString(err.Error())
-			}
-
-			rlog(c).Error().Msgf("%v", err)
-			return c.SendStatus(e.Code)
-		},
 	})
-
-	// storage setup for fiber's limiter
-	if gCli.Bool("limiter-use-bbolt") {
-		var prefix string
-		if prefix = gCli.String("database-prefix"); prefix == "" {
-			prefix = "."
-		}
-
-		app.fbstor = bolt.New(bolt.Config{
-			Database: fmt.Sprintf("%s/%s.db", prefix, gCli.App.Name),
-			Bucket:   "application-limiter",
-			Reset:    false,
-		})
-	}
 
 	// api controller init
 	gController = NewController()

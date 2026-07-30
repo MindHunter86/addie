@@ -204,8 +204,6 @@ func (m *App) fiberConfigure() {
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.IP()
 		},
-
-		Storage: m.fbstor,
 	}))
 
 	// group media - middlewares
