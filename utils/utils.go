@@ -7,7 +7,6 @@ const (
 	ContextKeyCliContext
 	ContextKeyAbortFunc
 	ContextKeyRPatcher
-	ContextKeyBlocklist
 	ContextKeyRuntime
 	ContextKeyBalancers
 )
@@ -18,7 +17,6 @@ const (
 
 const (
 	FbReqTmrPreCond ContextKey = iota
-	FbReqTmrBlocklist
 	FbReqTmrFakeQuality
 	FbReqTmrConsulLottery
 	FbReqTmrReqSign
@@ -26,16 +24,14 @@ const (
 )
 
 const (
-	CfgLotteryChance     = "lottery-chance"
-	CfgQualityLevel      = "quality-level"
-	CfgBlockList         = "block-list"
-	CfgBlockListSwitcher = "block-list-switcher"
-	CfgLimiterSwitcher   = "limiter-switcher"
-	CfgStdoutAccessLog   = "stdout-access-log"
-	CfgAccessLogStdout   = "access-log-stdout"
-	CfgAccessLogLevel    = "access-log-level"
-	CfgQualityBypass     = "quality-bypass-for"
-	CfgForceRUMitigate   = "force-ru-mitigate-to"
+	CfgLotteryChance   = "lottery-chance"
+	CfgQualityLevel    = "quality-level"
+	CfgLimiterSwitcher = "limiter-switcher"
+	CfgStdoutAccessLog = "stdout-access-log"
+	CfgAccessLogStdout = "access-log-stdout"
+	CfgAccessLogLevel  = "access-log-level"
+	CfgQualityBypass   = "quality-bypass-for"
+	CfgForceRUMitigate = "force-ru-mitigate-to"
 )
 
 const (

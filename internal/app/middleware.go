@@ -241,22 +241,6 @@ func (m *App) fbMidAppBalanceFallback(ctx *fiber.Ctx) error {
 	return ctx.Next()
 }
 
-// blocklist
-func (m *App) fbMidAppBlocklist(ctx *fiber.Ctx) error {
-	m.lapRequestTimer(ctx, utils.FbReqTmrBlocklist)
-
-	if m.runtime.Config.Get(runtime.ParamBlocklist).(int) == 0 {
-		return ctx.Next()
-	}
-
-	if m.blocklist.IsExists(ctx.IP()) {
-		rlog(ctx).Debug().Str("cip", ctx.IP()).Msg("client has been banned, forbid request")
-		return fiber.NewError(fiber.StatusForbidden)
-	}
-
-	return ctx.Next()
-}
-
 // balancer api
 func (m *App) fbMidBlcPreCond(ctx *fiber.Ctx) bool {
 	m.lapRequestTimer(ctx, utils.FbReqTmrBlcPreCond)

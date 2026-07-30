@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/MindHunter86/addie/internal/blocklist"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
@@ -19,8 +18,6 @@ type RuntimePatchType uint8
 const (
 	RuntimePatchLottery RuntimePatchType = iota
 	RuntimePatchQuality
-	RuntimePatchBlocklist
-	RuntimePatchBlocklistIps
 	RuntimePatchLimiter
 	RuntimePatchAccessStdout
 	RuntimePatchAccessLevel
@@ -32,15 +29,13 @@ var (
 	ErrRuntimeUndefinedPatch = errors.New("given patch payload is undefined")
 
 	RuntimeUtilsBindings = map[string]RuntimePatchType{
-		utils.CfgLotteryChance:     RuntimePatchLottery,
-		utils.CfgQualityLevel:      RuntimePatchQuality,
-		utils.CfgBlockList:         RuntimePatchBlocklistIps,
-		utils.CfgBlockListSwitcher: RuntimePatchBlocklist,
-		utils.CfgLimiterSwitcher:   RuntimePatchLimiter,
-		utils.CfgAccessLogStdout:   RuntimePatchAccessStdout,
-		utils.CfgAccessLogLevel:    RuntimePatchAccessLevel,
-		utils.CfgQualityBypass:     RuntimePatchQualityBypass,
-		utils.CfgForceRUMitigate:   RuntimePatchForceRUMitigate,
+		utils.CfgLotteryChance:   RuntimePatchLottery,
+		utils.CfgQualityLevel:    RuntimePatchQuality,
+		utils.CfgLimiterSwitcher: RuntimePatchLimiter,
+		utils.CfgAccessLogStdout: RuntimePatchAccessStdout,
+		utils.CfgAccessLogLevel:  RuntimePatchAccessLevel,
+		utils.CfgQualityBypass:   RuntimePatchQualityBypass,
+		utils.CfgForceRUMitigate: RuntimePatchForceRUMitigate,
 	}
 
 	// intenal
@@ -49,8 +44,6 @@ var (
 	runtimeChangesHumanize = map[RuntimePatchType]string{
 		RuntimePatchLottery:         "lottery chance",
 		RuntimePatchQuality:         "quality level",
-		RuntimePatchBlocklist:       "blocklist switch",
-		RuntimePatchBlocklistIps:    "blocklist ips",
 		RuntimePatchLimiter:         "limiter switch",
 		RuntimePatchAccessStdout:    "access_log stdout switcher",
 		RuntimePatchAccessLevel:     "access_log loglevel",
@@ -63,9 +56,7 @@ type (
 	Runtime struct {
 		Config *Storage
 
-		// todo - refactor
-		blocklist *blocklist.Blocklist // temporary;
-		cli       *cli.Context
+		cli *cli.Context
 	}
 	RuntimePatch struct {
 		Type  RuntimePatchType
@@ -74,13 +65,11 @@ type (
 )
 
 func NewRuntime(c context.Context) (r *Runtime, e error) {
-	blist := c.Value(utils.ContextKeyBlocklist).(*blocklist.Blocklist)
 	log = c.Value(utils.ContextKeyLogger).(*zerolog.Logger)
 	clictx := c.Value(utils.ContextKeyCliContext).(*cli.Context)
 
 	r = &Runtime{
-		blocklist: blist,
-		cli:       clictx,
+		cli: clictx,
 	}
 
 	if r.Config, e = NewStorage(c); e != nil {
@@ -102,11 +91,7 @@ func (m *Runtime) ApplyPatch(patch *RuntimePatch) (e error) {
 
 	case RuntimePatchQuality:
 		e = patch.ApplyQualityLevel(m.Config)
-	case RuntimePatchBlocklistIps:
-		e = patch.ApplyBlocklistIps(m.Config, m.blocklist)
 
-	case RuntimePatchBlocklist:
-		e = patch.ApplySwitch(m.Config, ParamBlocklist)
 	case RuntimePatchLimiter:
 		e = patch.ApplySwitch(m.Config, ParamLimiter)
 	case RuntimePatchAccessStdout:
@@ -196,28 +181,6 @@ func (m *RuntimePatch) ApplyLogLevel(st *Storage, param StorageParam) (e error) 
 
 	st.Set(ParamAccessLevel, level)
 	log.Info().Msgf("runtime patch has been applied for %s with %s", GetNameByParam[param], buf)
-	return
-}
-
-func (m *RuntimePatch) ApplyBlocklistIps(_ *Storage, bl *blocklist.Blocklist) (e error) {
-	buf := string(m.Patch)
-
-	if buf == "_" {
-		bl.Reset()
-		log.Info().Msg("runtime patch has been for Blocklist.Reset")
-		return
-	}
-
-	lastsize := bl.Size()
-	ips := strings.Split(buf, ",")
-	bl.Push(ips...)
-
-	// dummy code
-	// ???
-	// st.SetValue(ParamBlocklistIps, ips)
-
-	log.Info().Msgf("runtime patch has been for Blocklist, applied %d ips", len(ips))
-	log.Debug().Msgf("apply blocklist: last size - %d, new - %d", lastsize, bl.Size())
 	return
 }
 

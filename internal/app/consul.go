@@ -202,66 +202,9 @@ func (m *consulClient) getHealthServers(idx uint64, service string) (_ map[strin
 	return servers, meta.LastIndex, e
 }
 
-func (m *consulClient) updateBlocklistSwitcher(enabled string) (e error) {
-	kv := &capi.KVPair{}
-	kv.Key, kv.Value = m.getPrefixedSettingsKey(utils.CfgBlockListSwitcher), []byte(enabled)
-
-	_, e = m.KV().Put(kv, nil)
-	return e
-}
-
 func (m *consulClient) updateLimiterSwitcher(enabled string) (e error) {
 	kv := &capi.KVPair{}
 	kv.Key, kv.Value = m.getPrefixedSettingsKey(utils.CfgLimiterSwitcher), []byte(enabled)
-
-	_, e = m.KV().Put(kv, nil)
-	return e
-}
-
-func (m *consulClient) addIpToBlocklist(ip string) (e error) {
-	var kv *capi.KVPair
-	if kv, e = m.getBlocklistIps(); e != nil {
-		return
-	}
-
-	if len(kv.Value) != 0 {
-		ips := strings.Split(string(kv.Value), ",")
-		ips = append(ips, ip)
-		kv.Value = []byte(strings.Join(ips, ","))
-	} else {
-		kv.Value = []byte(ip)
-	}
-
-	return m.setBlocklistIps(kv)
-}
-
-func (m *consulClient) removeIpFromBlocklist(ip string) (e error) {
-	var kv *capi.KVPair
-	if kv, e = m.getBlocklistIps(); e != nil {
-		return
-	}
-
-	if kv == nil || len(kv.Value) == 0 {
-		return errors.New("there is no data from consul received")
-	}
-
-	ips, newips := strings.Split(string(kv.Value), ","), []string{}
-	for _, v := range ips {
-		if v == ip {
-			gLog.Debug().Msg("given ip is found, removing from blocklist...")
-			continue
-		}
-
-		newips = append(newips, v)
-	}
-
-	kv.Value = []byte(strings.Join(newips, ","))
-	return m.setBlocklistIps(kv)
-}
-
-func (m *consulClient) resetIpsInBlocklist() (e error) {
-	kv := &capi.KVPair{}
-	kv.Key, kv.Value = m.getPrefixedSettingsKey(utils.CfgBlockList), []byte("")
 
 	_, e = m.KV().Put(kv, nil)
 	return e
@@ -277,37 +220,6 @@ func (m *consulClient) updateQualityRewrite(q utils.TitleQuality) (e error) {
 
 func (*consulClient) getPrefixedSettingsKey(key string) string {
 	return fmt.Sprintf("%s/settings/%s", gCli.String("consul-kv-prefix"), key)
-}
-
-func (m *consulClient) getBlocklistIps() (kv *capi.KVPair, e error) {
-	opts, ckey := *defaultOpts, m.getPrefixedSettingsKey(utils.CfgBlockList)
-
-	if kv, _, e = m.KV().Get(ckey, opts.WithContext(m.ctx)); errors.Is(e, context.Canceled) {
-		gLog.Trace().Msg("context deadline for blocklist KV get")
-		return
-	} else if e != nil {
-		gLog.Error().Err(e).Msgf("could not get consul value for blocklist")
-		return
-	} else if kv == nil {
-		gLog.Warn().Msg("consul sent empty values for blocklist; is blocklist empty?")
-		return &capi.KVPair{}, e
-	}
-
-	return
-}
-
-func (m *consulClient) setBlocklistIps(kv *capi.KVPair) (e error) {
-	kv.Key = m.getPrefixedSettingsKey(utils.CfgBlockList)
-
-	if _, e = m.KV().Put(kv, nil); errors.Is(e, context.Canceled) {
-		gLog.Trace().Msg("context deadline for blocklist KV get")
-		return
-	} else if e != nil {
-		gLog.Error().Err(e).Msgf("could not get consul value for blocklist")
-		return
-	}
-
-	return
 }
 
 func (m *consulClient) configKeyWatchdog(runpatch chan *runtime.RuntimePatch) {
@@ -359,11 +271,6 @@ loop:
 				patch := &runtime.RuntimePatch{
 					Type:  ptype,
 					Patch: kvpair.Value,
-				}
-
-				// exclusions:
-				if patch.Type == runtime.RuntimePatchBlocklistIps && len(patch.Patch) == 0 {
-					patch.Patch = []byte("_")
 				}
 
 				runpatch <- patch

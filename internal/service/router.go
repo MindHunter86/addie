@@ -290,13 +290,6 @@ func (m *Service) fiberRouterInitialization() {
 	// 	m.fbHndBlcNodesBalance,
 	// 	m.fbHndBlcNodesBalanceFallback)
 
-	// group blocklist - /api/blocklist
-	blist := api.Group("/blocklist")
-	blist.Post("/add", controller.BlockIP)
-	blist.Post("/remove", controller.UnblockIP)
-	blist.Post("/switch", controller.BlocklistSwitch)
-	blist.Post("/reset", controller.BlocklistReset)
-
 	// // group media - /videos/media/ts
 	// media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
 
@@ -307,25 +300,6 @@ func (m *Service) fiberRouterInitialization() {
 	// 		c.Set(fiber.HeaderCacheControl, "no-cache")
 	// 		return c.SendStatus(fiber.StatusOK)
 	// 	})
-
-	// // group media - blocklist & limiter
-	// media.Use(m.fbMidAppBlocklist)
-	// media.Use(limiter.New(limiter.Config{
-	// 	Next: func(c *fiber.Ctx) bool {
-	// 		if m.runtime.Config.Get(runtime.ParamLimiter).(int) == 0 {
-	// 			return true
-	// 		}
-
-	// 		return c.IP() == "127.0.0.1" || gCli.App.Version == "devel"
-	// 	},
-
-	// 	Max:        gCli.Int("limiter-max-req"),
-	// 	Expiration: gCli.Duration("limiter-records-duration"),
-
-	// 	KeyGenerator: func(c *fiber.Ctx) string {
-	// 		return c.IP()
-	// 	},
-	// }))
 
 	// // group media - middlewares
 	// media.Use(m.fbMidAppFakeQuality)

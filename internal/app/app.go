@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/MindHunter86/addie/internal/balancer"
-	"github.com/MindHunter86/addie/internal/blocklist"
 	"github.com/MindHunter86/addie/internal/runtime"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
@@ -38,9 +37,8 @@ var (
 type App struct {
 	fb *fiber.App
 
-	cache     *CachedTitlesBucket
-	blocklist *blocklist.Blocklist
-	runtime   *runtime.Runtime
+	cache   *CachedTitlesBucket
+	runtime *runtime.Runtime
 
 	cloudBalancer balancer.Balancer
 	bareBalancer  balancer.Balancer
@@ -132,10 +130,6 @@ func (m *App) Bootstrap() (e error) {
 	// fake quality cooler cache
 	gLog.Info().Msg("starting fake quality cache buckets...")
 	m.cache = NewCachedTitlesBucket()
-
-	// blocklist
-	m.blocklist = blocklist.NewBlocklist(gCtx)
-	gCtx = context.WithValue(gCtx, utils.ContextKeyBlocklist, m.blocklist)
 
 	// runtime
 	if m.runtime, e = runtime.NewRuntime(gCtx); e != nil {

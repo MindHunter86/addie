@@ -14,7 +14,6 @@ const (
 
 	CtxBalancers
 	CtxTitleCache
-	CtxBlockList
 
 	CtxRuntime
 	CtxRPatcher
@@ -37,7 +36,6 @@ var CKtoa = map[ContextKey]string{
 
 	CtxBalancers:  "balancers",
 	CtxTitleCache: "titles cache",
-	CtxBlockList:  "blocklist",
 
 	CtxRuntime:  "runtime",
 	CtxRPatcher: "request patcher",

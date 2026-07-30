@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"net"
 	"strings"
 	"sync"
 
@@ -96,68 +95,6 @@ func (m *Controller) BalancerUpstreamReset(c *fiber.Ctx) (e error) {
 	}
 
 	m.balancers[cluster].ResetUpstream()
-	return respondPlainWithStatus(c, fiber.StatusNoContent)
-}
-
-func (m *Controller) BlockIP(c *fiber.Ctx) error {
-	ip := strings.TrimSpace(c.Query("ip"))
-	if ip == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "given ip is empty")
-	}
-
-	if net.ParseIP(ip) == nil {
-		return fiber.NewError(fiber.StatusBadRequest, "given ip is invalid")
-	}
-
-	if e := gConsul.addIpToBlocklist(ip); e != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-	}
-
-	rlog(c).Info().Msgf("ip %s has been banned by %s", ip, c.IP())
-	fmt.Fprintln(c, ip+" has been banned")
-
-	return respondPlainWithStatus(c, fiber.StatusOK)
-}
-
-func (m *Controller) UnblockIP(c *fiber.Ctx) error {
-	ip := strings.TrimSpace(c.Query("ip"))
-	if ip == "" {
-		return fiber.NewError(fiber.StatusBadRequest, "given ip is empty")
-	}
-
-	if net.ParseIP(ip) == nil {
-		return fiber.NewError(fiber.StatusBadRequest, "given ip is invalid")
-	}
-
-	if e := gConsul.removeIpFromBlocklist(ip); e != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-	}
-
-	rlog(c).Info().Msgf("ip %s has been unbanned by %s", ip, c.IP())
-	fmt.Fprintln(c, ip+" has been unbanned")
-
-	return respondPlainWithStatus(c, fiber.StatusOK)
-}
-
-func (m *Controller) BlocklistReset(c *fiber.Ctx) error {
-	if e := gConsul.resetIpsInBlocklist(); e != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-	}
-
-	return respondPlainWithStatus(c, fiber.StatusNoContent)
-}
-
-func (m *Controller) BlocklistSwitch(c *fiber.Ctx) (e error) {
-	input := strings.TrimSpace(c.Query("enabled"))
-	if input != "0" && input != "1" {
-		e = fiber.NewError(fiber.StatusBadRequest, "enabled query can be only 0 or 1")
-		return
-	}
-
-	if e = gConsul.updateBlocklistSwitcher(input); e != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-	}
-
 	return respondPlainWithStatus(c, fiber.StatusNoContent)
 }
 

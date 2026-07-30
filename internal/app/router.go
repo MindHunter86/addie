@@ -16,7 +16,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/favicon"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
@@ -82,9 +81,8 @@ func (m *App) fiberConfigure() {
 		}
 
 		if rlog(c).GetLevel() <= zerolog.DebugLevel {
-			routing, precond, blist, fquality, clottery, reqsign :=
+			routing, precond, fquality, clottery, reqsign :=
 				stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrPreCond)).Round(time.Microsecond),
-				stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrBlocklist)).Round(time.Microsecond),
 				stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrFakeQuality)).Round(time.Microsecond),
 				stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrConsulLottery)).Round(time.Microsecond),
 				stop.Sub(m.getRequestTimerSegment(c, utils.FbReqTmrReqSign)).Round(time.Microsecond),
@@ -92,15 +90,13 @@ func (m *App) fiberConfigure() {
 
 			reqsign = clottery - reqsign
 			clottery = fquality - clottery
-			fquality = blist - fquality
-			blist = precond - blist
+			fquality = precond - fquality
 			precond = routing - precond
 			routing = total - routing
 
 			rlog(c).Debug().
 				Dur("routing", routing).
 				Dur("precond", precond).
-				Dur("blist", blist).
 				Dur("fquality", fquality).
 				Dur("clottery", clottery).
 				Dur("reqsign", reqsign).
@@ -109,8 +105,8 @@ func (m *App) fiberConfigure() {
 				Msg("")
 
 			rlog(c).Trace().Msgf(
-				"Total: %s; Routing %s; PreCond %s; Blocklist %s; FQuality %s; CLottery %s; ReqSign %s;",
-				total, routing, precond, blist, fquality, clottery, reqsign)
+				"Total: %s; Routing %s; PreCond %s; FQuality %s; CLottery %s; ReqSign %s;",
+				total, routing, precond, fquality, clottery, reqsign)
 			rlog(c).Trace().Msgf("Time Collector %s", time.Since(stop).Round(time.Microsecond))
 		}
 
@@ -177,34 +173,8 @@ func (m *App) fiberConfigure() {
 		m.fbHndBlcNodesBalance,
 		m.fbHndBlcNodesBalanceFallback)
 
-	// group blocklist - /api/blocklist
-	blist := api.Group("/blocklist")
-	blist.Post("/add", gController.BlockIP)
-	blist.Post("/remove", gController.UnblockIP)
-	blist.Post("/switch", gController.BlocklistSwitch)
-	blist.Post("/reset", gController.BlocklistReset)
-
 	// group media - /videos/media/ts
 	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
-
-	// group media - blocklist & limiter
-	media.Use(m.fbMidAppBlocklist)
-	media.Use(limiter.New(limiter.Config{
-		Next: func(c *fiber.Ctx) bool {
-			if m.runtime.Config.Get(runtime.ParamLimiter).(int) == 0 {
-				return true
-			}
-
-			return c.IP() == "127.0.0.1" || gCli.App.Version == "devel"
-		},
-
-		Max:        gCli.Int("limiter-max-req"),
-		Expiration: gCli.Duration("limiter-records-duration"),
-
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-	}))
 
 	// group media - middlewares
 	media.Use(m.fbMidAppFakeQuality)
