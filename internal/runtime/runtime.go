@@ -18,7 +18,6 @@ type RuntimePatchType uint8
 const (
 	RuntimePatchLottery RuntimePatchType = iota
 	RuntimePatchQuality
-	RuntimePatchLimiter
 	RuntimePatchAccessStdout
 	RuntimePatchAccessLevel
 	RuntimePatchQualityBypass
@@ -31,7 +30,6 @@ var (
 	RuntimeUtilsBindings = map[string]RuntimePatchType{
 		utils.CfgLotteryChance:   RuntimePatchLottery,
 		utils.CfgQualityLevel:    RuntimePatchQuality,
-		utils.CfgLimiterSwitcher: RuntimePatchLimiter,
 		utils.CfgAccessLogStdout: RuntimePatchAccessStdout,
 		utils.CfgAccessLogLevel:  RuntimePatchAccessLevel,
 		utils.CfgQualityBypass:   RuntimePatchQualityBypass,
@@ -44,7 +42,6 @@ var (
 	runtimeChangesHumanize = map[RuntimePatchType]string{
 		RuntimePatchLottery:         "lottery chance",
 		RuntimePatchQuality:         "quality level",
-		RuntimePatchLimiter:         "limiter switch",
 		RuntimePatchAccessStdout:    "access_log stdout switcher",
 		RuntimePatchAccessLevel:     "access_log loglevel",
 		RuntimePatchQualityBypass:   "quality rewrite bypass",
@@ -92,8 +89,6 @@ func (m *Runtime) ApplyPatch(patch *RuntimePatch) (e error) {
 	case RuntimePatchQuality:
 		e = patch.ApplyQualityLevel(m.Config)
 
-	case RuntimePatchLimiter:
-		e = patch.ApplySwitch(m.Config, ParamLimiter)
 	case RuntimePatchAccessStdout:
 		e = patch.ApplySwitch(m.Config, ParamAccessStdout)
 

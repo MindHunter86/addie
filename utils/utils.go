@@ -26,7 +26,6 @@ const (
 const (
 	CfgLotteryChance   = "lottery-chance"
 	CfgQualityLevel    = "quality-level"
-	CfgLimiterSwitcher = "limiter-switcher"
 	CfgStdoutAccessLog = "stdout-access-log"
 	CfgAccessLogStdout = "access-log-stdout"
 	CfgAccessLogLevel  = "access-log-level"

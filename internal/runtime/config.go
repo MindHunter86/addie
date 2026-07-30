@@ -20,7 +20,6 @@ type StorageParam uint8
 const (
 	ParamLottery StorageParam = iota
 	ParamQuality
-	ParamLimiter
 	ParamAccessStdout
 	ParamAccessLevel
 	ParamQualityBypass
@@ -32,7 +31,6 @@ const (
 var ParamDefaults = map[StorageParam]interface{}{
 	ParamLottery:         100,
 	ParamQuality:         utils.TitleQualityHD,
-	ParamLimiter:         0,
 	ParamAccessStdout:    1,
 	ParamAccessLevel:     zerolog.InfoLevel,
 	ParamQualityBypass:   nil,
@@ -42,7 +40,6 @@ var ParamDefaults = map[StorageParam]interface{}{
 var GetNameByParam = map[StorageParam]string{
 	ParamLottery:         runtimeChangesHumanize[RuntimePatchLottery],
 	ParamQuality:         runtimeChangesHumanize[RuntimePatchQuality],
-	ParamLimiter:         runtimeChangesHumanize[RuntimePatchLimiter],
 	ParamAccessStdout:    runtimeChangesHumanize[RuntimePatchAccessStdout],
 	ParamAccessLevel:     runtimeChangesHumanize[RuntimePatchAccessLevel],
 	ParamQualityBypass:   runtimeChangesHumanize[RuntimePatchQualityBypass],

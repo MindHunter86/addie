@@ -173,8 +173,6 @@ func (m *consulClient) listenClusterEvents(cluster balancer.Balancer) (e error) 
 	}
 }
 
-// func (m *consulClient)
-
 func (m *consulClient) getHealthServers(idx uint64, service string) (_ map[string]net.IP, _ uint64, e error) {
 	opts := *defaultOpts
 	opts.WaitIndex = idx
@@ -200,14 +198,6 @@ func (m *consulClient) getHealthServers(idx uint64, service string) (_ map[strin
 	}
 
 	return servers, meta.LastIndex, e
-}
-
-func (m *consulClient) updateLimiterSwitcher(enabled string) (e error) {
-	kv := &capi.KVPair{}
-	kv.Key, kv.Value = m.getPrefixedSettingsKey(utils.CfgLimiterSwitcher), []byte(enabled)
-
-	_, e = m.KV().Put(kv, nil)
-	return e
 }
 
 func (m *consulClient) updateQualityRewrite(q utils.TitleQuality) (e error) {

@@ -276,7 +276,6 @@ func (m *Service) fiberRouterInitialization() {
 	// group api - /api
 	api := m.fb.Group("/api")
 	api.Post("logger/level", controller.SetLoggerLevel)
-	api.Post("limiter/switch", controller.LimiterSwitch)
 	api.Post("quality", controller.UpdateQualityRewrite)
 
 	// group upstream

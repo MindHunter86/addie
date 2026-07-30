@@ -98,20 +98,6 @@ func (m *Controller) BalancerUpstreamReset(c *fiber.Ctx) (e error) {
 	return respondPlainWithStatus(c, fiber.StatusNoContent)
 }
 
-func (m *Controller) LimiterSwitch(c *fiber.Ctx) (e error) {
-	input := strings.TrimSpace(c.Query("enabled"))
-	if input != "0" && input != "1" {
-		e = fiber.NewError(fiber.StatusBadRequest, "enabled query can be only 0 or 1")
-		return
-	}
-
-	if e = gConsul.updateLimiterSwitcher(input); e != nil {
-		return fiber.NewError(fiber.StatusInternalServerError, e.Error())
-	}
-
-	return respondPlainWithStatus(c, fiber.StatusNoContent)
-}
-
 func (m *Controller) SetLoggerLevel(c *fiber.Ctx) error {
 	level := strings.TrimSpace(c.Query("level"))
 
