@@ -1,0 +1,13 @@
+package flags
+
+import "github.com/urfave/cli/v2"
+
+func FlagsInitialization(em bool, appname string) (f []cli.Flag) {
+	f = append(f, commonFlags(em)...)
+	f = append(f, httpClientFlags(em)...)
+	f = append(f, httpServerFlags(em)...)
+	f = append(f, applicationFlags(em, appname)...)
+	f = append(f, databaseFlags(em)...)
+
+	return f
+}

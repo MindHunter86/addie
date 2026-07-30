@@ -26,13 +26,18 @@ replace (
 )
 
 require (
+	github.com/go-kit/kit v0.9.0
 	github.com/gofiber/fiber/v2 v2.52.14
 	github.com/gofiber/storage/bbolt v1.3.5
 	github.com/hashicorp/consul/api v1.30.0
-	github.com/jedib0t/go-pretty/v6 v6.6.9
+	github.com/jedib0t/go-pretty/v6 v6.8.3
+	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.33.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/urfave/cli/v2 v2.27.7
+	github.com/valyala/bytebufferpool v1.0.0
+	github.com/valyala/tcplisten v1.0.0
+	go.uber.org/atomic v1.11.0
 	golang.org/x/net v0.35.0
 )
 
@@ -42,6 +47,7 @@ require (
 	github.com/clipperhouse/uax29/v2 v2.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/fatih/color v1.16.0 // indirect
+	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/gofiber/utils v1.1.0 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -63,9 +69,7 @@ require (
 	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/tinylib/msgp v1.2.5 // indirect
-	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
-	github.com/valyala/tcplisten v1.0.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
