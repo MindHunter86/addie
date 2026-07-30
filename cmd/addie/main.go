@@ -11,7 +11,7 @@ import (
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/urfave/cli/v2"
 
-	application "github.com/MindHunter86/addie/app"
+	application "github.com/MindHunter86/addie/internal/app"
 )
 
 func main() {

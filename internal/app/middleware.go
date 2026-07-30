@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/MindHunter86/addie/balancer"
-	"github.com/MindHunter86/addie/runtime"
+	"github.com/MindHunter86/addie/internal/balancer"
+	"github.com/MindHunter86/addie/internal/runtime"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
 )
