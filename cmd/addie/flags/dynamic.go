@@ -6,14 +6,21 @@ import (
 )
 
 func dynamicFlags(_ bool) []cli.Flag {
-	balancerFullBypass := config.NewDynamicString("111")
+	// balancer-handling
+	balancerHandling := config.NewDynamicFlag(1)
+
+	// balancer-max-quality
+	// balancer-quality-handling
+
+	// balancer-force-ru-migration
 
 	return []cli.Flag{
 		// generic flags for further mutations
 		&cli.GenericFlag{
-			Name:  "balancer-full-bypass",
-			Usage: "",
-			Value: balancerFullBypass,
+			Name:     "balancer-handling",
+			Category: "Dynamic Config Defaults",
+			Usage:    "",
+			Value:    balancerHandling,
 		},
 	}
 }
