@@ -62,3 +62,4 @@ balancer:
       countries: ["RU", "KZ", "BY", "UZ", "AZ", "TJ", "TM", "KG", "AM", "GE"]
       primary: ["ru1"]
       secondary: ["ru2"]
+      backup: ["eu"]
