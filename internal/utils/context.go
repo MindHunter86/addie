@@ -10,6 +10,8 @@ const (
 	CtxAccsLogger
 	CtxStats
 
+	CtxConfig
+
 	CtxController
 
 	CtxBalancers

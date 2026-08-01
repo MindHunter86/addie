@@ -4,10 +4,9 @@ import (
 	"strings"
 
 	"github.com/MindHunter86/addie/internal/config"
+	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/urfave/cli/v2"
 )
-
-const DynamicConfigCategory = "Dynamic Config Defaults"
 
 func dynamicFlags(_ bool) []cli.Flag {
 	balancerProcessing := config.NewDynamicFlag(100)
@@ -18,38 +17,31 @@ func dynamicFlags(_ bool) []cli.Flag {
 		// dynamic config
 		&cli.StringFlag{
 			Name:     "dynamic-config-source",
-			Category: DynamicConfigCategory[:strings.LastIndex(DynamicConfigCategory, " ")],
+			Category: utils.DynamicConfigCategory[:strings.LastIndex(utils.DynamicConfigCategory, " ")],
 			Aliases:  []string{"c"},
 			EnvVars:  []string{"DYNAMIC_CONFIG"},
 			Usage:    "`FILE/URL` with/to config settings in YAML format (only for dynamic values)",
-		},
-		&cli.StringFlag{
-			Name:     "balancer-schema-source",
-			Category: DynamicConfigCategory[:strings.LastIndex(DynamicConfigCategory, " ")],
-			Aliases:  []string{"s"},
-			EnvVars:  []string{"BALANCER_SCHEMA"},
-			Usage:    "`FILE/URL` with/to schema for balancers in YAML format",
 		},
 
 		// dynamic flag defaults for further mutations
 		// by dynamic config source (above)
 		&cli.GenericFlag{
 			Name:     "balancer-traffic-processing",
-			Category: DynamicConfigCategory,
+			Category: utils.DynamicConfigCategory,
 			EnvVars:  []string{"BALANCER_PROCESSING"},
 			Usage:    "",
 			Value:    balancerProcessing,
 		},
 		&cli.GenericFlag{
 			Name:     "balancer-quality-processing",
-			Category: DynamicConfigCategory,
+			Category: utils.DynamicConfigCategory,
 			EnvVars:  []string{"BALANCER_QUALITY_PROCESSING"},
 			Usage:    "",
 			Value:    qualityProcessing,
 		},
 		&cli.GenericFlag{
 			Name:     "balancer-max-available-quality",
-			Category: DynamicConfigCategory,
+			Category: utils.DynamicConfigCategory,
 			EnvVars:  []string{"BALANCER_MAX_QUALITY"},
 			Usage:    "",
 			Value:    maxQuality,
