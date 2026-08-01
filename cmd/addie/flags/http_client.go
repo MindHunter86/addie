@@ -10,69 +10,65 @@ func httpClientFlags(expertMode bool) []cli.Flag {
 	return []cli.Flag{
 
 		// http client commons
-		&cli.DurationFlag{
-			Name:     "http-client-read-timeout",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    10 * time.Second,
-		},
-		&cli.DurationFlag{
-			Name:     "http-client-write-timeout",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    5 * time.Second,
-		},
-		&cli.DurationFlag{
-			Name:     "http-client-conn-timeout",
-			Category: "Http Client Commons",
-			Usage:    "force connection rotation after this `time`",
-			Hidden:   expertMode,
-			Value:    10 * time.Minute,
-		},
-		&cli.DurationFlag{
-			Name:     "http-client-idle-timeout",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    5 * time.Minute,
-		},
-		&cli.IntFlag{
-			Name:     "http-client-max-idle-conn",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    256,
-		},
-		&cli.DurationFlag{
-			Name:     "http-client-ssl-timeout",
-			Category: "Http Client Commons",
-			Usage:    "tls handshake timeout",
-			Hidden:   expertMode,
-			Value:    30 * time.Second,
-		},
-		&cli.IntFlag{
-			Name:     "http-client-max-conns-per-host",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    256,
-		},
-		&cli.DurationFlag{
-			Name:     "http-client-dns-cache-dur",
-			Category: "Http Client Commons",
-			Hidden:   expertMode,
-			Value:    1 * time.Minute,
-		},
-		&cli.IntFlag{
-			Name:     "http-client-tcpdial-concurr",
-			Category: "Http Client Commons",
-			Usage:    "0 - unlimited",
-			Hidden:   expertMode,
-			Value:    0,
-		},
 		&cli.BoolFlag{
-			Name:               "http-client-insecure",
+			Name:               "http-client-ssl-insecure",
 			Category:           "Http Client Commons",
 			Usage:              "TLS certificate verification disabling",
 			Hidden:             expertMode,
 			DisableDefaultText: true,
+		},
+		&cli.IntFlag{
+			Name:     "http-client-max-conns",
+			Category: "Http Client Commons",
+			Hidden:   expertMode,
+			Value:    32,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-read",
+			Category: "Http Client Commons",
+			Hidden:   expertMode,
+			Value:    3 * time.Second,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-write",
+			Category: "Http Client Commons",
+			Hidden:   expertMode,
+			Value:    3 * time.Second,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-idle",
+			Category: "Http Client Commons",
+			Usage:    "idle keep-alive connections are closed after this duration",
+			Hidden:   expertMode,
+			Value:    5 * time.Minute,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-conn",
+			Category: "Http Client Commons",
+			Usage:    "keep-alive connections are closed after this duration",
+			Hidden:   expertMode,
+			Value:    10 * time.Minute,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-conn-wait",
+			Category: "Http Client Commons",
+			Usage:    "maximum duration for waiting for a free connection",
+			Hidden:   expertMode,
+			Value:    3 * time.Second,
+		},
+		&cli.IntFlag{
+			Name:     "http-client-tcpdial-concurr",
+			Category: "Http Client Commons",
+			Usage:    "concurrency controls the maximum number of concurrent Dials that can be performed using this object. Setting this to 0 means unlimited",
+			Hidden:   expertMode,
+			Value:    0,
+		},
+		&cli.DurationFlag{
+			Name:     "http-client-dnscache-dur",
+			Category: "Http Client Commons",
+			Usage:    "this may be used to override the default DNS cache duration",
+			Hidden:   expertMode,
+			Value:    1 * time.Minute,
 		},
 
 		// !! LEGACY

@@ -1,0 +1,64 @@
+---
+common:
+  config:
+    log_level: debug
+    access_log_level: info
+    access_log_stdout: False
+    access_log_syslog: False
+
+# # TODO
+# firewall:
+#   blocklist: {}
+#   limiter: {}
+
+regions:
+  eu0:
+    origin: {}
+    upstream:
+      - server: storage1.example.com
+      - server: storage2.example.com
+      - server: storage3.example.com
+  eu1:
+    origin:
+      region: eu0
+      # server: storage.example.com
+    upstream:
+      - server: cache1.example.com
+      - server: cache2.example.com
+      - server: cache3.example.com
+  eu2:
+    dynamic: True
+    origin:
+      region: eu1
+    upstream:
+      - server: cache-cloud1.example.com
+      - server: cache-cloud2.example.com
+      - server: cache-cloud3.example.com
+      - server: cache-cloud4.example.com
+      - server: cache-cloud5.example.com
+  ru1:
+    origin:
+      region: eu1
+    upstream:
+      - server: cache1.ru1.example.com
+      - server: cache2.ru1.example.com
+  ru2:
+    origin:
+      region: ru1
+    upstream:
+      - server: cache1.ru2.example.com
+        bandwidth: 10000
+
+balancer:
+  config:
+    traffic_processing: 100
+    quality_processing: 100
+    max_available_quality: 1080
+  routing:
+    eu:
+      primary: ["eu1"]
+      secondary: ["eu2"]
+    ru:
+      countries: ["RU", "KZ", "BY", "UZ", "AZ", "TJ", "TM", "KG", "AM", "GE"]
+      primary: ["ru1"]
+      secondary: ["ru2"]

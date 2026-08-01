@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"errors"
 
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/urfave/cli/v2"
@@ -9,11 +10,17 @@ import (
 
 type DynamicConfig struct {
 	cli *cli.Context
+
+	keys []string
 }
 
-func NewDynamicConfig(c context.Context) (dc *DynamicConfig) {
+func NewDynamicConfig(c context.Context, cat string) (dc *DynamicConfig, e error) {
 	dc = new(DynamicConfig)
 	dc.cli = utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
+
+	if dc.keys = dc.lookupForConfigKeys(cat); dc.keys == nil {
+		return nil, errors.New("BUG: could not find dynamic config values in cli.Flags")
+	}
 
 	// cli := utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
 	// for _, fl := range cli.App.Flags {
@@ -29,7 +36,29 @@ func NewDynamicConfig(c context.Context) (dc *DynamicConfig) {
 		panic("")
 	}
 
-	return dc
+	return
+}
+
+func (m *DynamicConfig) lookupForRemoteConfig(url string) {}
+
+func (m *DynamicConfig) lookupForConfigKeys(catname string) (keys []string) {
+	keys = make([]string, 0, 32)
+
+	for _, cat := range m.cli.App.VisibleFlagCategories() {
+		if cat.Name() != catname {
+			continue
+		}
+
+		for _, flag := range cat.Flags() {
+			keys = append(m.keys, flag.Names()...)
+		}
+	}
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	return
 }
 
 type ConfigSet struct {
