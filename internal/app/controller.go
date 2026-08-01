@@ -138,7 +138,7 @@ func (m *Controller) UpdateQualityRewrite(c *fiber.Ctx) (e error) {
 		return
 	}
 
-	gConsul.updateQualityRewrite(quality)
+	// gConsul.updateQualityRewrite(quality)
 
 	rlog(c).Info().Msgf("quality %s has been applied by %s", quality.String(), c.IP())
 	fmt.Fprintln(c, quality.String()+" has been applied")

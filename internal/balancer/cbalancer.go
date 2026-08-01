@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	braceexp "github.com/MindHunter86/addie/internal/utils/brace_exp"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/rs/zerolog"
@@ -43,12 +44,16 @@ func NewClusterBalancer(ctx context.Context, cluster BalancerCluster) *ClusterBa
 	}
 }
 
+func (m *ClusterBalancer) GetFQDNsByBrace(pattern string) ([]string, error) {
+	return braceexp.Expand(pattern, 0)
+}
+
 func (m *ClusterBalancer) GetClusterName() string {
 	switch m.cluster {
 	case BalancerClusterNodes:
-		return m.ccx.String("consul-service-nodes")
+		return m.ccx.String("service-nodes")
 	case BalancerClusterCloud:
-		return m.ccx.String("consul-service-cloud")
+		return m.ccx.String("service-cloud")
 	default:
 		return ""
 	}
@@ -73,7 +78,7 @@ func (m *ClusterBalancer) BalanceRandom() (_ string, server *BalancerServer, e e
 	return ip.String(), server, e
 }
 
-func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string) (_ string, server *BalancerServer, e error) {
+func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string, try int) (_ string, server *BalancerServer, e error) {
 	var key string
 	if key, e = m.getKeyFromChunkName(&chunkname); e != nil {
 		m.log.Debug().Err(e).Msgf("chunkname - '%s'; fallback to legacy balancing", chunkname)
@@ -81,7 +86,8 @@ func (m *ClusterBalancer) BalanceByChunk(prefix, chunkname string) (_ string, se
 	}
 
 	var ip *net.IP
-	if ip = m.getServer(murmur3.Sum128([]byte(prefix + key))); ip == nil {
+	idx0, idx1 := murmur3.Sum128([]byte(prefix + key))
+	if ip = m.getServer(idx0, idx1, try); ip == nil {
 		e = ErrUpstreamUnavailable
 		return
 	}
@@ -111,7 +117,7 @@ func (*ClusterBalancer) getKeyFromChunkName(chunkname *string) (key string, e er
 	return
 }
 
-func (m *ClusterBalancer) getServer(idx1, idx2 uint64) (ip *net.IP) {
+func (m *ClusterBalancer) getServer(idx1, idx2 uint64, try int) (ip *net.IP) {
 	if !m.TryRLock() {
 		m.log.Warn().Msg("could not get lock for reading upstream; fallback to legacy balancing")
 		return
@@ -125,6 +131,10 @@ func (m *ClusterBalancer) getServer(idx1, idx2 uint64) (ip *net.IP) {
 	idx3 := idx1 % uint64(m.size)
 	idx4 := idx2 % uint64(m.size)
 	idx0 := idx3 + idx4
+
+	if idx0 = idx0 + uint64(try); idx0 > uint64(m.size) {
+		idx0 = idx0 - uint64(m.size)
+	}
 
 	ip = m.ips[idx0%uint64(m.size)]
 	return ip
@@ -146,6 +156,34 @@ func (m *ClusterBalancer) getRandomServer() (ip *net.IP) {
 	return
 }
 
+func (m *ClusterBalancer) UpdateServersByFQDN(fqdns []string) {
+	if len(fqdns) == 0 || fqdns[0] == "" {
+		m.log.Error().Msgf("there no servers for updating %s cluster; check your args", m.GetClusterName())
+		return
+	}
+
+	servers := make(map[string]net.IP)
+
+	for _, f := range fqdns {
+		if f == "" {
+			m.log.Warn().Msgf("empty hostname detected in fqdns list, cluster %s", m.GetClusterName())
+			continue
+		}
+
+		ips, _ := net.LookupIP(f)
+		if len(ips) != 1 {
+			m.log.Warn().Msg("abnormal IPs count in server by brace, check given hostnames; dropping server...")
+			continue
+		}
+
+		m.log.Debug().Msgf("found server for %s : %s with %s", m.GetClusterName(), f, ips[0].String())
+		servers[f] = ips[0]
+	}
+
+	m.log.Info().Msgf("updating cluster %s with %d servers", m.GetClusterName(), len(servers))
+	m.UpdateServers(servers)
+}
+
 func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	m.log.Trace().Msg("upstream servers debugging (I/II update iterations)")
 	m.log.Info().Msg("[II] upstream update triggered")
@@ -155,7 +193,12 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	for name, ip := range servers {
 		if server, ok := m.upstream.getServer(&m.ulock, ip.String()); !ok {
 			m.log.Trace().Msgf("[I] new server : %s", name)
-			m.upstream.putServer(&m.ulock, ip.String(), newServer(name, &ip))
+
+			srv := newServer(m.log, name, &ip)
+			m.upstream.putServer(&m.ulock, ip.String(), srv)
+
+			m.log.Trace().Msgf("starting monitor for server %s", srv.Name)
+			go srv.monitor(m.ccx.Duration("balancer-server-check-interval"), m.ccx.Duration("balancer-server-check-timeout"))
 		} else {
 			m.log.Trace().Msgf("[I] server found %s", name)
 			server.disable(false)
@@ -163,15 +206,15 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	}
 
 	// find differs and disable dead servers
-	curr := m.upstream.copy(&m.ulock)
-	for _, server := range curr {
-		if _, ok := servers[server.Name]; !ok {
-			server.disable()
-			m.log.Trace().Msgf("[II] server - %s : disabled", server.Name)
-		} else {
-			m.log.Trace().Msgf("[II] server - %s : enabled", server.Name)
-		}
-	}
+	// curr := m.upstream.copy(&m.ulock)
+	// for _, server := range curr {
+	// 	if _, ok := servers[server.Name]; !ok {
+	// 		server.disable()
+	// 		m.log.Trace().Msgf("[II] server - %s : disabled", server.Name)
+	// 	} else {
+	// 		m.log.Trace().Msgf("[II] server - %s : enabled", server.Name)
+	// 	}
+	// }
 
 	// update "balancer" (slice that used for getNextServer)
 	m.Lock()

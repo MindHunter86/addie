@@ -30,7 +30,7 @@ const (
 
 var ParamDefaults = map[StorageParam]interface{}{
 	ParamLottery:         100,
-	ParamQuality:         utils.TitleQualityHD,
+	ParamQuality:         utils.TitleQualityFHD,
 	ParamAccessStdout:    1,
 	ParamAccessLevel:     zerolog.InfoLevel,
 	ParamQualityBypass:   nil,

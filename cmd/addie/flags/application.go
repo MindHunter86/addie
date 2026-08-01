@@ -64,6 +64,28 @@ func applicationFlags(_ bool, appname string) []cli.Flag {
 			'tick' - is a ticker duration; each tick, the step will be decreased by 1;
 			a request's quality will be updated when 'hardcoded payload' mod 'step' == 0`,
 		},
+		&cli.StringFlag{
+			Name:  "balancer-node-servers",
+			Usage: "cache{1..2}.example.com",
+			Value: "cache{1..9}.libria.fun",
+		},
+		&cli.StringFlag{
+			Name:  "balancer-cloud-servers",
+			Usage: "cache-cloud{1..2}.example.com",
+			Value: "cache-cloud{1..18}.libria.fun",
+		},
+		&cli.StringFlag{
+			Name:  "balancer-domain",
+			Usage: "libria.fun",
+		},
+		&cli.DurationFlag{
+			Name:  "balancer-server-check-timeout",
+			Value: 1 * time.Second,
+		},
+		&cli.DurationFlag{
+			Name:  "balancer-server-check-interval",
+			Value: 10 * time.Second,
+		},
 
 		// link generation settings
 		&cli.DurationFlag{

@@ -7,13 +7,15 @@ import (
 )
 
 type Balancer interface {
-	BalanceByChunk(prefix, chunkname string) (_ string, server *BalancerServer, e error)
+	BalanceByChunk(prefix, chunkname string, try int) (_ string, server *BalancerServer, e error)
 	BalanceRandom() (_ string, server *BalancerServer, e error)
 	UpdateServers(servers map[string]net.IP)
 	GetStats() io.Reader
 	ResetStats()
 	ResetUpstream()
 	GetClusterName() string
+	GetFQDNsByBrace(string) ([]string, error)
+	UpdateServersByFQDN([]string)
 }
 
 var (

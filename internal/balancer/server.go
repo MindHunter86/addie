@@ -4,6 +4,8 @@ import (
 	"net"
 	"sync"
 	"time"
+
+	"github.com/rs/zerolog"
 )
 
 type BalancerServer struct {
@@ -16,12 +18,19 @@ type BalancerServer struct {
 
 	lastRequestTime time.Time
 	handledRequests uint64
+
+	log *zerolog.Logger
 }
 
-func newServer(name string, ip *net.IP) *BalancerServer {
+func newServer(l *zerolog.Logger, name string, ip *net.IP) *BalancerServer {
+	if name[len(name)] == '.' {
+		name = name[:len(name)-1]
+	}
+
 	return &BalancerServer{
 		Name: name,
 		Ip:   *ip,
+		log:  l,
 	}
 }
 
@@ -57,4 +66,27 @@ func (m *BalancerServer) disable(disabled ...bool) {
 
 	m.lastChanged = time.Now()
 	m.isDown = disabled[0]
+}
+
+func (m *BalancerServer) monitor(interval, timeout time.Duration) {
+	var e error
+	var conn net.Conn
+
+	for {
+		if conn, e = net.DialTimeout("tcp", net.JoinHostPort(m.Ip.String(), "80"), timeout); e != nil {
+			if !m.isDown {
+				m.log.Info().Msgf("server %s was downed", m.Name)
+				m.disable()
+			}
+		} else {
+			if m.isDown {
+				m.log.Info().Msgf("server %s was upped", m.Name)
+				m.disable(false)
+			}
+
+			_ = conn.Close()
+		}
+
+		time.Sleep(interval)
+	}
 }

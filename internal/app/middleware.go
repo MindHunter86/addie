@@ -203,10 +203,10 @@ func (m *App) fbMidAppBalance(ctx *fiber.Ctx) (e error) {
 			// trying to balance with giver cluster
 			_, server, e = cluster.BalanceByChunk(
 				prefixbuf.String(),
-				string(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkName]))
+				string(m.chunkRegexp.FindSubmatch(uri)[utils.ChunkName]), fails)
 
 			if errors.Is(e, balancer.ErrServerUnavailable) {
-				rlog(ctx).Trace().Err(e).Int("fails", fails).Str("req", reqid).
+				rlog(ctx).Info().Err(e).Int("fails", fails).Str("req", reqid).
 					Str("cluster", cluster.GetClusterName()).Msg("trying to roll new server...")
 				continue
 			} else if errors.Is(e, balancer.ErrUpstreamUnavailable) {

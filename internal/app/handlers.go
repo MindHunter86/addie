@@ -89,7 +89,7 @@ func (m *App) fbHndApiCoreBalance(ctx *fiber.Ctx) (e error) {
 	buf.Write(sub[utils.ChunkEpisodeId])
 	buf.Write(sub[utils.ChunkQualityLevel])
 
-	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]))
+	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]), 0)
 	if errors.Is(e, balancer.ErrServerUnavailable) {
 		gLog.Debug().Err(e).Msg("balancer soft error; fallback to random balancing")
 		return ctx.Next()
@@ -114,7 +114,7 @@ func (m *App) fbHndBlcNodesBalance(ctx *fiber.Ctx) error {
 	buf.Write(sub[utils.ChunkEpisodeId])
 	buf.Write(sub[utils.ChunkQualityLevel])
 
-	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]))
+	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]), 0)
 	if errors.Is(e, balancer.ErrServerUnavailable) {
 		gLog.Debug().Err(e).Msg("balancer soft error; fallback to random balancing")
 		return ctx.Next()
