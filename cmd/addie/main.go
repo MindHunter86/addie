@@ -35,7 +35,7 @@ func main() {
 
 	app.HideHelpCommand = true
 	app.Flags = flags.FlagsInitialization(
-		!strings.Contains(strings.Join(os.Args, " "), "--expert-mode"), app.Name)
+		!strings.Contains(strings.Join(os.Args, " "), "--expert-mode"))
 
 	app.Action = func(c *cli.Context) (e error) {
 		// logger v2
