@@ -11,10 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var (
-	errFbApiInvalidMode    = errors.New("mode argument is invalid; values soft, hard are permited only")
-	errFbApiInvalidQuality = errors.New("quality argument is invalid; 480, 720, 1080 values are permited only")
-)
+// var (
+// 	errFbApiInvalidMode    = errors.New("mode argument is invalid; values soft, hard are permited only")
+// 	errFbApiInvalidQuality = errors.New("quality argument is invalid; 480, 720, 1080 values are permited only")
+// )
 
 func (*App) fbHndApiPreCondErr(ctx *fiber.Ctx) error {
 	switch ctx.Locals("errors").(appMidError) {
