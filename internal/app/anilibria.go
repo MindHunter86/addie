@@ -71,7 +71,7 @@ func NewApiClient() (*ApiClient, error) {
 		TLSHandshakeTimeout: gCli.Duration("http-tls-handshake-timeout"),
 
 		MaxIdleConns:    gCli.Int("http-max-idle-conns"),
-		IdleConnTimeout: gCli.Duration("http-idle-timeout"),
+		IdleConnTimeout: gCli.Duration("http-timeout-idle"),
 
 		DisableCompression: false,
 		DisableKeepAlives:  false,

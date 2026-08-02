@@ -159,7 +159,9 @@ func (m *App) fiberConfigure() {
 	// group api - /api
 	api := m.fb.Group("/api")
 	api.Post("logger/level", gController.SetLoggerLevel)
-	api.Post("quality", gController.UpdateQualityRewrite)
+
+	// TODO - waiting migration on Dynamic Config
+	// api.Post("quality", gController.UpdateQualityRewrite)
 
 	// group upstream
 	upstr := api.Group("/balancer")

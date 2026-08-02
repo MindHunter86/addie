@@ -122,26 +122,27 @@ func (m *Controller) SetLoggerLevel(c *fiber.Ctx) error {
 	return respondPlainWithStatus(c, fiber.StatusOK)
 }
 
-func (m *Controller) UpdateQualityRewrite(c *fiber.Ctx) (e error) {
-	mode, inquality :=
-		strings.TrimSpace(c.Query("mode", "soft")),
-		strings.TrimSpace(c.Query("level", "1080"))
+// TODO - waiting migration on Dynamic Config
+// func (m *Controller) UpdateQualityRewrite(c *fiber.Ctx) (e error) {
+// 	mode, inquality :=
+// 		strings.TrimSpace(c.Query("mode", "soft")),
+// 		strings.TrimSpace(c.Query("level", "1080"))
 
-	if mode != "soft" && mode != "hard" {
-		e = fiber.NewError(fiber.StatusInternalServerError, errFbApiInvalidMode.Error())
-		return
-	}
+// 	if mode != "soft" && mode != "hard" {
+// 		e = fiber.NewError(fiber.StatusInternalServerError, errFbApiInvalidMode.Error())
+// 		return
+// 	}
 
-	quality, ok := utils.GetTitleQualityByString[inquality]
-	if !ok {
-		e = fiber.NewError(fiber.StatusInternalServerError, errFbApiInvalidQuality.Error())
-		return
-	}
+// 	quality, ok := utils.GetTitleQualityByString[inquality]
+// 	if !ok {
+// 		e = fiber.NewError(fiber.StatusInternalServerError, errFbApiInvalidQuality.Error())
+// 		return
+// 	}
 
-	// gConsul.updateQualityRewrite(quality)
+// 	// gConsul.updateQualityRewrite(quality)
 
-	rlog(c).Info().Msgf("quality %s has been applied by %s", quality.String(), c.IP())
-	fmt.Fprintln(c, quality.String()+" has been applied")
+// 	rlog(c).Info().Msgf("quality %s has been applied by %s", quality.String(), c.IP())
+// 	fmt.Fprintln(c, quality.String()+" has been applied")
 
-	return respondPlainWithStatus(c, fiber.StatusOK)
-}
+// 	return respondPlainWithStatus(c, fiber.StatusOK)
+// }
