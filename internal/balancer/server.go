@@ -23,10 +23,6 @@ type BalancerServer struct {
 }
 
 func newServer(l *zerolog.Logger, name string, ip *net.IP) *BalancerServer {
-	if name[len(name)] == '.' {
-		name = name[:len(name)-1]
-	}
-
 	return &BalancerServer{
 		Name: name,
 		Ip:   *ip,
@@ -69,24 +65,20 @@ func (m *BalancerServer) disable(disabled ...bool) {
 }
 
 func (m *BalancerServer) monitor(interval, timeout time.Duration) {
-	var e error
-	var conn net.Conn
+	var ok bool
 
 	for {
-		if conn, e = net.DialTimeout("tcp", net.JoinHostPort(m.Ip.String(), "80"), timeout); e != nil {
-			if !m.isDown {
-				m.log.Info().Msgf("server %s was downed", m.Name)
-				m.disable()
-			}
-		} else {
-			if m.isDown {
-				m.log.Info().Msgf("server %s was upped", m.Name)
-				m.disable(false)
-			}
-
-			_ = conn.Close()
-		}
+		ok = m.healthcheck(timeout)
+		m.disable(!ok)
 
 		time.Sleep(interval)
 	}
+}
+
+func (m *BalancerServer) healthcheck(timeout time.Duration) (_ bool) {
+	if conn, e := net.DialTimeout("tcp", net.JoinHostPort(m.Ip.String(), "80"), timeout); e == nil {
+		return conn.Close() == nil
+	}
+
+	return
 }

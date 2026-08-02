@@ -5,7 +5,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/MindHunter86/addie/utils"
+	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/rs/zerolog"
 )
 

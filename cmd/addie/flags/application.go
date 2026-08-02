@@ -74,10 +74,6 @@ func applicationFlags(_ bool, appname string) []cli.Flag {
 			Usage: "cache-cloud{1..2}.example.com",
 			Value: "cache-cloud{1..18}.libria.fun",
 		},
-		&cli.StringFlag{
-			Name:  "balancer-domain",
-			Usage: "libria.fun",
-		},
 		&cli.DurationFlag{
 			Name:  "balancer-server-check-timeout",
 			Value: 1 * time.Second,
@@ -125,7 +121,7 @@ func applicationFlags(_ bool, appname string) []cli.Flag {
 		&cli.StringFlag{
 			Name:  "consul-entries-domain",
 			Usage: "add domain for all service entries",
-			Value: "libria.fun",
+			Value: "",
 		},
 		&cli.StringFlag{
 			Name:  "consul-kv-prefix",

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	braceexp "github.com/MindHunter86/addie/internal/utils/brace_exp"
 	"github.com/MindHunter86/addie/utils"
@@ -196,6 +197,12 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 
 			srv := newServer(m.log, name, &ip)
 			m.upstream.putServer(&m.ulock, ip.String(), srv)
+
+			// TODO - temporary, planned upgrade to BFD
+			if ok = srv.healthcheck(400 * time.Millisecond); !ok {
+				m.log.Warn().Msgf("updated serer %s in cluster %s is disabled due to tcp fails", srv.Name, m.GetClusterName())
+				srv.disable()
+			}
 
 			m.log.Trace().Msgf("starting monitor for server %s", srv.Name)
 			go srv.monitor(m.ccx.Duration("balancer-server-check-interval"), m.ccx.Duration("balancer-server-check-timeout"))
