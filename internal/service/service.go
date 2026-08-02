@@ -61,9 +61,9 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			DisablePreParseMultipartForm: true,
 
 			Prefork:      gCli.Bool("http-prefork"),
-			IdleTimeout:  gCli.Duration("http-idle-timeout"),
-			ReadTimeout:  gCli.Duration("http-read-timeout"),
-			WriteTimeout: gCli.Duration("http-write-timeout"),
+			IdleTimeout:  gCli.Duration("http-timeout-idle"),
+			ReadTimeout:  gCli.Duration("http-timeout-read"),
+			WriteTimeout: gCli.Duration("http-timeout-write"),
 
 			Concurrency: gCli.Int("http-concurrency-conns"),
 

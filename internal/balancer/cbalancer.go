@@ -52,9 +52,9 @@ func (m *ClusterBalancer) GetFQDNsByBrace(pattern string) ([]string, error) {
 func (m *ClusterBalancer) GetClusterName() string {
 	switch m.cluster {
 	case BalancerClusterNodes:
-		return m.ccx.String("service-nodes")
+		return "core-nodes"
 	case BalancerClusterCloud:
-		return m.ccx.String("service-cloud")
+		return "cloud-nodes"
 	default:
 		return ""
 	}
@@ -212,6 +212,7 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 		}
 	}
 
+	// TODO - waiting for BFD migration
 	// find differs and disable dead servers
 	// curr := m.upstream.copy(&m.ulock)
 	// for _, server := range curr {
