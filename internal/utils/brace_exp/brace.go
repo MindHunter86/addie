@@ -1,3 +1,10 @@
+// Bash brace expansion
+//
+// * NOTICE
+// * This file contains code initially generated with the assistance of AI tooling (this file only not the project as a whole).
+// * The resulting implementation has been reviewed, tested, and, where necessary,
+// * corrected by the project maintainer prior to publication.
+
 package braceexp
 
 import (
