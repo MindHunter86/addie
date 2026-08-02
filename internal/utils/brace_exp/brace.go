@@ -9,6 +9,14 @@ import (
 
 const defaultLimit = 10_000
 
+type rangeSpec struct {
+	start  int64
+	end    int64
+	step   uint64
+	width  int
+	padded bool
+}
+
 func Expand(pattern string, limit int) ([]string, error) {
 	if limit <= 0 {
 		limit = defaultLimit
@@ -22,14 +30,14 @@ func Expand(pattern string, limit int) ([]string, error) {
 	out := make([]string, 0, count)
 	buf := make([]byte, 0, len(pattern)+16)
 
-	if err := expand(&out, buf, pattern); err != nil {
+	if err := appendExpanded(&out, buf, pattern); err != nil {
 		return nil, err
 	}
 
 	return out, nil
 }
 
-func expand(out *[]string, buf []byte, pattern string) error {
+func appendExpanded(out *[]string, buf []byte, pattern string) error {
 	open := strings.IndexByte(pattern, '{')
 	if open < 0 {
 		buf = append(buf, pattern...)
@@ -37,74 +45,85 @@ func expand(out *[]string, buf []byte, pattern string) error {
 		return nil
 	}
 
-	close := strings.IndexByte(pattern[open+1:], '}')
-	if close < 0 {
+	braceEnd := strings.IndexByte(pattern[open+1:], '}')
+	if braceEnd < 0 {
 		return fmt.Errorf("unclosed brace at byte %d", open)
 	}
-	close += open + 1
+	braceEnd += open + 1
 
-	body := pattern[open+1 : close]
+	body := pattern[open+1 : braceEnd]
 	if strings.IndexByte(body, '{') >= 0 {
 		return errors.New("nested braces are not supported")
 	}
 
 	buf = append(buf, pattern[:open]...)
-	tail := pattern[close+1:]
+	tail := pattern[braceEnd+1:]
 
-	start, end, step, width, padded, isRange, err := parseRange(body)
-	if err != nil {
-		return err
-	}
-
-	if isRange {
-		for value := start; ; {
+	if strings.IndexByte(body, ',') >= 0 {
+		for {
+			part, rest, found := strings.Cut(body, ",")
 			size := len(buf)
-			buf = appendNumber(buf, value, width, padded)
+			buf = append(buf, part...)
 
-			if err := expand(out, buf, tail); err != nil {
+			if err := appendExpanded(out, buf, tail); err != nil {
 				return err
 			}
 
 			buf = buf[:size]
-
-			if value == end {
+			if !found {
 				return nil
 			}
-
-			if start < end {
-				if uint64(end)-uint64(value) < step {
-					return nil
-				}
-				value += int64(step)
-			} else {
-				if uint64(value)-uint64(end) < step {
-					return nil
-				}
-				value -= int64(step)
-			}
+			body = rest
 		}
 	}
 
-	if !strings.ContainsRune(body, ',') {
+	spec, isRange, err := parseRange(body)
+	if err != nil {
+		return err
+	}
+	if !isRange {
 		return fmt.Errorf("invalid brace expression {%s}", body)
 	}
 
-	for {
-		part, rest, found := strings.Cut(body, ",")
-		size := len(buf)
-		buf = append(buf, part...)
+	return appendRange(out, buf, tail, spec)
+}
 
-		if err := expand(out, buf, tail); err != nil {
+func appendRange(
+	out *[]string,
+	buf []byte,
+	tail string,
+	spec rangeSpec,
+) error {
+	for value := spec.start; ; {
+		size := len(buf)
+		buf = appendNumber(
+			buf,
+			value,
+			spec.width,
+			spec.padded,
+		)
+
+		if err := appendExpanded(out, buf, tail); err != nil {
 			return err
 		}
 
 		buf = buf[:size]
-
-		if !found {
+		if value == spec.end {
 			return nil
 		}
 
-		body = rest
+		if spec.start < spec.end {
+			if uint64(spec.end)-uint64(value) < spec.step {
+				return nil
+			}
+			value += int64(spec.step)
+			continue
+		}
+
+		if uint64(value)-uint64(spec.end) < spec.step {
+			return nil
+		}
+		value -= int64(spec.step)
 	}
 }
 
@@ -112,22 +131,33 @@ func expansionCount(pattern string, limit int) (int, error) {
 	count := 1
 
 	for offset := 0; ; {
-		relativeOpen := strings.IndexByte(pattern[offset:], '{')
+		relativeOpen := strings.IndexByte(
+			pattern[offset:],
+			'{',
+		)
 		if relativeOpen < 0 {
 			return count, nil
 		}
 
 		open := offset + relativeOpen
-		relativeClose := strings.IndexByte(pattern[open+1:], '}')
-		if relativeClose < 0 {
-			return 0, fmt.Errorf("unclosed brace at byte %d", open)
+		relativeEnd := strings.IndexByte(
+			pattern[open+1:],
+			'}',
+		)
+		if relativeEnd < 0 {
+			return 0, fmt.Errorf(
+				"unclosed brace at byte %d",
+				open,
+			)
 		}
 
-		close := open + relativeClose + 1
-		body := pattern[open+1 : close]
+		braceEnd := open + relativeEnd + 1
+		body := pattern[open+1 : braceEnd]
 
 		if strings.IndexByte(body, '{') >= 0 {
-			return 0, errors.New("nested braces are not supported")
+			return 0, errors.New(
+				"nested braces are not supported",
+			)
 		}
 
 		variants, err := variantCount(body)
@@ -136,36 +166,41 @@ func expansionCount(pattern string, limit int) (int, error) {
 		}
 
 		if variants > limit/count {
-			return 0, fmt.Errorf("expansion exceeds limit %d", limit)
+			return 0, fmt.Errorf(
+				"expansion exceeds limit %d",
+				limit,
+			)
 		}
 
 		count *= variants
-		offset = close + 1
+		offset = braceEnd + 1
 	}
 }
 
 func variantCount(body string) (int, error) {
-	start, end, step, _, _, isRange, err := parseRange(body)
-	if err != nil {
-		return 0, err
-	}
-
-	if !isRange {
-		if !strings.ContainsRune(body, ',') {
-			return 0, fmt.Errorf("invalid brace expression {%s}", body)
-		}
-
+	if strings.IndexByte(body, ',') >= 0 {
 		return strings.Count(body, ",") + 1, nil
 	}
 
-	var distance uint64
-	if start <= end {
-		distance = uint64(end) - uint64(start)
-	} else {
-		distance = uint64(start) - uint64(end)
+	spec, isRange, err := parseRange(body)
+	if err != nil {
+		return 0, err
+	}
+	if !isRange {
+		return 0, fmt.Errorf(
+			"invalid brace expression {%s}",
+			body,
+		)
 	}
 
-	count := distance/step + 1
+	var distance uint64
+	if spec.start <= spec.end {
+		distance = uint64(spec.end) - uint64(spec.start)
+	} else {
+		distance = uint64(spec.start) - uint64(spec.end)
+	}
+
+	count := distance/spec.step + 1
 	if count > uint64(^uint(0)>>1) {
 		return 0, errors.New("expansion is too large")
 	}
@@ -173,63 +208,68 @@ func variantCount(body string) (int, error) {
 	return int(count), nil
 }
 
-func parseRange(body string) (
-	start int64,
-	end int64,
-	step uint64,
-	width int,
-	padded bool,
-	ok bool,
-	err error,
-) {
+func parseRange(body string) (rangeSpec, bool, error) {
 	first := strings.Index(body, "..")
 	if first < 0 {
-		return
+		return rangeSpec{}, false, nil
 	}
 
 	startText := body[:first]
 	endText := body[first+2:]
 	stepText := ""
 
-	if relativeSecond := strings.Index(endText, ".."); relativeSecond >= 0 {
-		stepText = endText[relativeSecond+2:]
-		endText = endText[:relativeSecond]
+	if second := strings.Index(endText, ".."); second >= 0 {
+		stepText = endText[second+2:]
+		endText = endText[:second]
 
-		if strings.Contains(stepText, "..") {
-			err = fmt.Errorf("invalid range {%s}", body)
-			return
+		if stepText == "" ||
+			strings.Contains(stepText, "..") {
+			return rangeSpec{}, false, fmt.Errorf(
+				"invalid range {%s}",
+				body,
+			)
 		}
 	}
 
-	start, err = strconv.ParseInt(startText, 10, 64)
+	start, err := strconv.ParseInt(startText, 10, 64)
 	if err != nil {
-		err = fmt.Errorf("invalid range {%s}", body)
-		return
+		return rangeSpec{}, false, fmt.Errorf(
+			"invalid range {%s}",
+			body,
+		)
 	}
 
-	end, err = strconv.ParseInt(endText, 10, 64)
+	end, err := strconv.ParseInt(endText, 10, 64)
 	if err != nil {
-		err = fmt.Errorf("invalid range {%s}", body)
-		return
+		return rangeSpec{}, false, fmt.Errorf(
+			"invalid range {%s}",
+			body,
+		)
 	}
 
-	step = 1
+	step := uint64(1)
 	if stepText != "" {
-		step, err = strconv.ParseUint(trimSign(stepText), 10, 63)
+		step, err = strconv.ParseUint(
+			trimSign(stepText),
+			10,
+			63,
+		)
 		if err != nil || step == 0 {
-			err = fmt.Errorf("invalid range {%s}", body)
-			return
+			return rangeSpec{}, false, fmt.Errorf(
+				"invalid range {%s}",
+				body,
+			)
 		}
 	}
 
-	startDigits := trimSign(startText)
-	endDigits := trimSign(endText)
-
-	width = max(len(startText), len(endText))
-	padded = hasLeadingZero(startDigits) || hasLeadingZero(endDigits)
-	ok = true
-
-	return
+	return rangeSpec{
+		start: start,
+		end:   end,
+		step:  step,
+		width: max(len(startText), len(endText)),
+		padded: hasLeadingZero(startText) ||
+			hasLeadingZero(endText),
+	}, true, nil
 }
 
 func appendNumber(
@@ -259,7 +299,8 @@ func appendNumber(
 }
 
 func trimSign(value string) string {
-	if len(value) > 0 && (value[0] == '-' || value[0] == '+') {
+	if value != "" &&
+		(value[0] == '-' || value[0] == '+') {
 		return value[1:]
 	}
 
@@ -267,5 +308,8 @@ func trimSign(value string) string {
 }
 
 func hasLeadingZero(value string) bool {
-	return len(value) > 1 && value[0] == '0'
+	return len(value) > 1 && value[0] == '0' ||
+		len(value) > 2 &&
+			value[0] == '-' &&
+			value[1] == '0'
 }
