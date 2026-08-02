@@ -47,9 +47,10 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			TrustedProxies:          strings.Split(gCli.String("http-trusted-proxies"), ","),
 			ProxyHeader:             gCli.String("http-realip-header"),
 
-			AppName:               c.App.Name,
-			ServerHeader:          fmt.Sprintf("%s/%s", c.App.Name, c.App.Version),
 			DisableStartupMessage: true,
+
+			AppName:      c.App.Name,
+			ServerHeader: fmt.Sprintf("%s/%s", c.App.Name, c.App.Version),
 
 			StrictRouting:      true,
 			DisableDefaultDate: false,
@@ -79,6 +80,9 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			},
 
 			ErrorHandler: fiberErrorHandler,
+
+			// JSONEncoder: easyjson.Marshal,
+			// JSONDecoder: easyjson.Unmarshal,
 
 			// todo : we need fasthttp.MaxConnsPerIP
 		}),
