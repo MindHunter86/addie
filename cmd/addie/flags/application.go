@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func applicationFlags(_ bool, appname string) []cli.Flag {
+func applicationFlags(_ bool) []cli.Flag {
 	// validate := validator.New()
 
 	return []cli.Flag{
