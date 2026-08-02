@@ -207,12 +207,12 @@ func variantCount(body string) (int, error) {
 		distance = uint64(spec.start) - uint64(spec.end)
 	}
 
-	count := distance/spec.step + 1
-	if count > uint64(^uint(0)>>1) {
+	quotient := distance / spec.step
+	if quotient >= uint64(^uint(0)>>1) {
 		return 0, errors.New("expansion is too large")
 	}
 
-	return int(count), nil
+	return int(quotient + 1), nil
 }
 
 func parseRange(body string) (rangeSpec, bool, error) {

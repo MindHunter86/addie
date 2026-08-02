@@ -222,6 +222,11 @@ func TestExpandErrors(t *testing.T) {
 			limit:   19,
 			wantErr: "expansion exceeds limit 19",
 		},
+		{
+			name:    "full int64 range overflows variant count",
+			pattern: "{-9223372036854775808..9223372036854775807}",
+			wantErr: "expansion is too large",
+		},
 	}
 
 	for _, tt := range tests {
