@@ -70,6 +70,13 @@ func httpClientFlags(expertMode bool) []cli.Flag {
 			Hidden:   expertMode,
 			Value:    1 * time.Minute,
 		},
+		&cli.DurationFlag{
+			Name:     "http-client-timeout-filewrite",
+			Category: "Http Client Commons",
+			Usage:    "deadline for any response to file copy actions",
+			Hidden:   expertMode,
+			Value:    1 * time.Second,
+		},
 
 		// !! LEGACY
 		// !! LEGACY

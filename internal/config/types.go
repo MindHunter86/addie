@@ -1,43 +1,38 @@
 package config
 
-import (
-	"fmt"
-	"sync/atomic"
+// YAML config parsing
+type (
+	ExternalSource struct {
+		Balancer *ExternalSourceBalancer `yaml:",omitempty,inline"`
+	}
+	ExternalSourceBalancer struct {
+		Config  map[string]any              `yaml:",omitempty,inline"`
+		Routing map[string]*BalancerRouting `yaml:",omitempty,inline"`
+		Regions map[string]*BalancerRegion  `yaml:",omitempty,inline"`
+	}
+	BalancerRouting struct {
+		Countries []string `yaml:",omitempty"`
+
+		Primary   []string `yaml:",omitempty"`
+		Secondary []string `yaml:",omitempty"`
+		Backup    []string `yaml:",omitempty"`
+	}
+	BalancerRegion struct {
+		Dynamic bool `yaml:",omitempty"`
+
+		Orgin    *RegionOrigin     `yaml:",omitempty,inline"`
+		Upstream []*RegionUpstream `yaml:",omitempty,inline"`
+	}
+	RegionOrigin struct {
+		Region string `yaml:",omitempty"`
+		Server string `yaml:",omitempty"`
+	}
+	RegionUpstream struct {
+		Server    string `yaml:",omitempty"`
+		Bandwidth uint   `yaml:",omitempty"`
+	}
 )
 
-// Supported ONLY bool,int32|64,string,time.Duration
-type DynamicFlag[T comparable] struct {
-	v *atomic.Value
-}
-
-func NewDynamicFlag[T comparable](v T) *DynamicFlag[T] {
-	var av atomic.Value
-	av.Store(v)
-
-	return &DynamicFlag[T]{
-		v: &av,
-	}
-}
-
-func (m *DynamicFlag[T]) Store(v *T) error {
-	m.v.Store(*v)
-	return nil
-}
-
-func (m *DynamicFlag[T]) Load() *T {
-	v := m.v.Load().(T)
-	return &v
-}
-
-//
-// urfave cli.Generic interface compatibility methods
-
-// fake method: do nothing
-func (m *DynamicFlag[T]) Set(string) error {
-	return nil
-}
-
-// fake method: output human value (for --help)
-func (m *DynamicFlag[T]) String() string {
-	return fmt.Sprint(m.v.Load())
-}
+// urfave generic flags compatibility
+type BalancerRoutingMap map[string]*BalancerRouting
+type BalancerRegionMap map[string]*BalancerRegion
