@@ -1,6 +1,6 @@
 module github.com/MindHunter86/addie
 
-go 1.19
+go 1.23.0
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.6
@@ -8,7 +8,7 @@ require (
 	github.com/gofiber/swagger v1.1.1
 	github.com/hashicorp/consul/api v1.30.0
 	github.com/jedib0t/go-pretty/v6 v6.6.7
-	github.com/rs/zerolog v1.33.0
+	github.com/rs/zerolog v1.35.1
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/swaggo/swag v1.16.4
 	github.com/urfave/cli/v2 v2.27.5
@@ -38,7 +38,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
