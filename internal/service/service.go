@@ -20,29 +20,23 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// todo : delete global variables, move to Context
-var (
-	gCli *cli.Context
-	gLog *zerolog.Logger
-
-	gCtx context.Context
-)
-
 type Service struct {
 	fb *fiber.App
 	wg sync.WaitGroup
 
 	abort context.CancelFunc
+
+	log *zerolog.Logger
+	cli *cli.Context
+	ctx context.Context
 }
 
 func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
-	gCli, gLog = c, l
-
 	service := &Service{
 		fb: fiber.New(fiber.Config{
-			EnableTrustedProxyCheck: gCli.String("http-trusted-proxies") != "",
-			TrustedProxies:          strings.Split(gCli.String("http-trusted-proxies"), ","),
-			ProxyHeader:             gCli.String("http-realip-header"),
+			EnableTrustedProxyCheck: c.String("http-trusted-proxies") != "",
+			TrustedProxies:          strings.Split(c.String("http-trusted-proxies"), ","),
+			ProxyHeader:             c.String("http-realip-header"),
 
 			DisableStartupMessage: true,
 
@@ -57,12 +51,12 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			DisableDefaultContentType:    true,
 			DisablePreParseMultipartForm: true,
 
-			Prefork:      gCli.Bool("http-prefork"),
-			IdleTimeout:  gCli.Duration("http-timeout-idle"),
-			ReadTimeout:  gCli.Duration("http-timeout-read"),
-			WriteTimeout: gCli.Duration("http-timeout-write"),
+			Prefork:      c.Bool("http-prefork"),
+			IdleTimeout:  c.Duration("http-timeout-idle"),
+			ReadTimeout:  c.Duration("http-timeout-read"),
+			WriteTimeout: c.Duration("http-timeout-write"),
 
-			Concurrency: gCli.Int("http-concurrency-conns"),
+			Concurrency: c.Int("http-concurrency-conns"),
 
 			BodyLimit:      1 << 16, // 64KiB
 			ReadBufferSize: 1 << 13, // 8KiB
@@ -83,12 +77,15 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 
 			// todo : we need fasthttp.MaxConnsPerIP
 		}),
+
+		log: l,
+		cli: c,
 	}
 
-	gCtx, service.abort = context.WithCancel(context.Background())
-	gCtx = context.WithValue(gCtx, utils.CtxZeroLogger, gLog)
-	gCtx = context.WithValue(gCtx, utils.CtxCliContext, gCli)
-	gCtx = context.WithValue(gCtx, utils.CtxAccsLogger, al)
+	service.ctx, service.abort = context.WithCancel(context.Background())
+	service.ctx = context.WithValue(service.ctx, utils.CtxZeroLogger, l)
+	service.ctx = context.WithValue(service.ctx, utils.CtxCliContext, c)
+	service.ctx = context.WithValue(service.ctx, utils.CtxAccsLogger, al)
 
 	return service
 }
@@ -97,18 +94,18 @@ func (m *Service) Bootstrap() (e error) {
 	// PREBOOTSTRAP SECTION:
 	//
 	// GC tunning
-	gogc := gCli.Int("runtime-gogc")
+	gogc := m.cli.Int("runtime-gogc")
 	oldgc := debug.SetGCPercent(gogc)
-	gLog.Info().Msgf("setting GOGC from %d to %d", oldgc, gogc)
+	m.log.Info().Msgf("setting GOGC from %d to %d", oldgc, gogc)
 
 	//
 	// prepare all subservices
 	if e = utils.ForEachSubservice(func(ck utils.ContextKey, sh utils.SubserviceHandler) error {
-		gLog.Trace().Msgf("prepare %s subservice...", utils.CKtoa[ck])
-		defer gLog.Trace().Msgf("%s subservice has been prepared", utils.CKtoa[ck])
+		m.log.Trace().Msgf("prepare %s subservice...", utils.CKtoa[ck])
+		defer m.log.Trace().Msgf("%s subservice has been prepared", utils.CKtoa[ck])
 
-		if val, err := sh(gCtx); err == nil {
-			gCtx = context.WithValue(gCtx, ck, val)
+		if val, err := sh(m.ctx); err == nil {
+			m.ctx = context.WithValue(m.ctx, ck, val)
 			return nil
 		} else {
 			return err
@@ -120,7 +117,7 @@ func (m *Service) Bootstrap() (e error) {
 	//
 	// BOOTSTRAP SECTION:
 	if e = utils.CallCallbacks(utils.OnServiceBootstrap, func(cb utils.ServiceCallback) error {
-		return utils.ExtraErrorWrapper(cb(gCtx), "on-service-bootstrap callback run")
+		return utils.ExtraErrorWrapper(cb(m.ctx), "on-service-bootstrap callback run")
 	}); e != nil {
 		return
 	}
@@ -131,44 +128,44 @@ func (m *Service) Bootstrap() (e error) {
 
 	// custom listener configuration
 	flisten := func() error {
-		return m.fb.Listen(gCli.String("http-listen-addr"))
+		return m.fb.Listen(m.cli.String("http-listen-addr"))
 	}
 	if fn := m.fhttpListenerInitialization(); fn != nil {
-		gLog.Info().Msg("configuring custom fasthttp net.listener...")
+		m.log.Info().Msg("configuring custom fasthttp net.listener...")
 		flisten = fn
 	}
 
 	// http server bootstrap (should be at the end of bootstrap)
-	utils.Go(&m.wg, gLog, func() {
-		gLog.Debug().Msg("starting fiber http server...")
-		defer gLog.Debug().Msg("fiber http server has been stopped")
+	utils.Go(&m.wg, m.log, func() {
+		m.log.Debug().Msg("starting fiber http server...")
+		defer m.log.Debug().Msg("fiber http server has been stopped")
 
 		if err := flisten(); errors.Is(err, context.Canceled) {
 			return
 		} else if err != nil {
-			gLog.Error().Err(err).Msg("fiber internal error")
+			m.log.Error().Err(err).Msg("fiber internal error")
 			m.abort()
 		}
 	})
 
 	// main event loop
-	utils.Go(&m.wg, gLog, m.loop)
-	gLog.Info().Msg("all subservices were started, waiting for waitgroup...")
+	utils.Go(&m.wg, m.log, m.loop)
+	m.log.Info().Msg("all subservices were started, waiting for waitgroup...")
 
 	// destructor
 	m.wg.Wait()
 	return m.destruct(e)
 }
 
-func (*Service) destruct(e error) error {
+func (m *Service) destruct(e error) error {
 	_ = utils.CallCallbacks(utils.OnServiceDestruct, func(cb utils.ServiceCallback) error {
-		if err := cb(gCtx); err != nil {
-			gLog.Warn().Msg(utils.ExtraErrorWrapper(err, "on-service-destruct callback call").Error())
+		if err := cb(m.ctx); err != nil {
+			m.log.Warn().Msg(utils.ExtraErrorWrapper(err, "on-service-destruct callback call").Error())
 		}
 		return nil
 	})
 
-	if gLog.GetLevel() <= zerolog.DebugLevel {
+	if m.log.GetLevel() <= zerolog.DebugLevel {
 		// brief delay to ensure all subservices complete
 		// and print correct information about goroutines
 		time.Sleep(250 * time.Millisecond)
@@ -179,10 +176,10 @@ func (*Service) destruct(e error) error {
 }
 
 func (m *Service) loop() {
-	gLog.Debug().Msg("starting main event loop...")
-	defer gLog.Debug().Msg("main event loop has been stopped")
+	m.log.Debug().Msg("starting main event loop...")
+	defer m.log.Debug().Msg("main event loop has been stopped")
 
-	sts := utils.ContextValueExtract[*stats.Stats](gCtx, utils.CtxStats)
+	sts := utils.ContextValueExtract[*stats.Stats](m.ctx, utils.CtxStats)
 
 	// debug does not work on windows systems
 	kernDumpSignal := m.listenForDebugSignal()
@@ -199,15 +196,15 @@ func (m *Service) loop() {
 	handleTickerTick := func(lap time.Time, fn func(context.Context)) {
 		fn(context.WithValue(
 			context.WithValue(
-				gCtx, utils.CtxTickerTick, tick), utils.CtxTickerLap, lap))
+				m.ctx, utils.CtxTickerTick, tick), utils.CtxTickerLap, lap))
 	}
 	logIfError := func(e error) {
 		if e != nil {
-			gLog.Warn().Msg(e.Error())
+			m.log.Warn().Msg(e.Error())
 		}
 	}
 
-	gLog.Info().Msg("application ready for serving requests")
+	m.log.Info().Msg("application ready for serving requests")
 
 LOOP:
 	for {
@@ -215,13 +212,13 @@ LOOP:
 		// TERM signals
 		case <-kernQuitSignal:
 			m.abort()
-		case <-gCtx.Done():
-			gLog.Info().Msg("internal abort() has been caught; initiate application closing...")
+		case <-m.ctx.Done():
+			m.log.Info().Msg("internal abort() has been caught; initiate application closing...")
 			break LOOP
 
 		// DEBUG signals
 		case <-kernDumpSignal:
-			gLog.Debug().Msg("kernel signal has been caught; dumping goroutines into stdout...")
+			m.log.Debug().Msg("kernel signal has been caught; dumping goroutines into stdout...")
 			debug.PrintStack()
 			pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
 
@@ -231,7 +228,7 @@ LOOP:
 		case lap := <-loopticker.C:
 			tick++
 			handleTickerTick(lap, func(ctx context.Context) {
-				utils.GoCallCallbacks(utils.OnServiceTicker1sec, &m.wg, gLog, func(cb utils.ServiceCallback) {
+				utils.GoCallCallbacks(utils.OnServiceTicker1sec, &m.wg, m.log, func(cb utils.ServiceCallback) {
 					logIfError(utils.ExtraErrorWrapper(cb(ctx), "on-service-ticker-1sec callback run"))
 				})
 			})
@@ -240,7 +237,7 @@ LOOP:
 
 	// http destruct (wtf fiber?)
 	// ShutdownWithContext() may be called only after fiber.Listen is running (O_o)
-	if e := m.fb.ShutdownWithContext(gCtx); e != nil {
-		gLog.Error().Err(e).Msg("fiber Shutdown() error")
+	if e := m.fb.ShutdownWithContext(m.ctx); e != nil {
+		m.log.Error().Err(e).Msg("fiber Shutdown() error")
 	}
 }

@@ -31,8 +31,8 @@ func (m *Service) fiberMiddlewareInitialization() {
 	// 	curl -o profile.out https://host/debug/pprof -H 'X-Authorization: $TOKEN'
 	// 	go tool pprof profile.out
 	ppEnabled, ppSecret :=
-		gCli.Bool("http-pprof-enable"),
-		utils.UnsafeBytes(gCli.String("http-pprof-secret"))
+		m.cli.Bool("http-pprof-enable"),
+		utils.UnsafeBytes(m.cli.String("http-pprof-secret"))
 
 	m.fb.Use(pprof.New(pprof.Config{
 		Next: func(c *fiber.Ctx) bool {
@@ -42,7 +42,7 @@ func (m *Service) fiberMiddlewareInitialization() {
 
 			return !bytes.Equal(ppSecret, c.Request().Header.Peek("x-pprof-secret"))
 		},
-		Prefix: gCli.String("http-pprof-prefix"),
+		Prefix: m.cli.String("http-pprof-prefix"),
 	}))
 
 	// Small middleware for optimizing working with IP
@@ -55,20 +55,20 @@ func (m *Service) fiberMiddlewareInitialization() {
 	})
 
 	// simple limiter for all requests
-	limitMaxRps := gCli.Int("limit-request-maxrps")
+	limitMaxRps := m.cli.Int("limit-request-maxrps")
 	m.fb.Use(limiter.New(limiter.Config{
 		Next: func(c *fiber.Ctx) bool {
 			return limitMaxRps == 0 || utils.IPFromFiberRequest(c) == "127.0.0.1"
 		},
 		KeyGenerator: utils.IPFromFiberRequest,
 
-		Max:        gCli.Int("limit-request-maxrps"),
-		Expiration: gCli.Duration("limit-request-expiration"),
+		Max:        m.cli.Int("limit-request-maxrps"),
+		Expiration: m.cli.Duration("limit-request-expiration"),
 	}))
 
 	// push global app context for request
 	m.fb.Use(func(c *fiber.Ctx) (e error) {
-		c.SetUserContext(gCtx)
+		c.SetUserContext(m.ctx)
 		return c.Next()
 	})
 
@@ -98,7 +98,7 @@ func (m *Service) fiberMiddlewareInitialization() {
 	// - we send logs in syslog and stdout by default,
 	// - but if access-log-stdout is 0 we use syslog output only
 	// m.fb.Use(func(c *fiber.Ctx) error {
-	// 	logger := gLog.With().Str("id", c.Locals("requestid").(string)).Logger().
+	// 	logger := m.log.With().Str("id", c.Locals("requestid").(string)).Logger().
 	// 		Level(m.runtime.Config.Get(runtime.ParamAccessLevel).(zerolog.Level))
 	// 	syslogger := logger.Output(m.syslogWriter)
 
@@ -194,7 +194,7 @@ func (m *Service) fiberMiddlewareInitialization() {
 
 	// !! TODO - reviewme
 	// CORS serving
-	if gCli.Bool("http-cors") {
+	if m.cli.Bool("http-cors") {
 		m.fb.Use(cors.New(cors.Config{
 			AllowOrigins: "*",
 			AllowHeaders: strings.Join([]string{
@@ -213,14 +213,14 @@ func (m *Service) fiberRouterInitialization() {
 	//
 
 	// dynamic settings and helpers:
-	statsToken := utils.UnsafeBytes(gCli.String("http-stats-secret"))
+	statsToken := utils.UnsafeBytes(m.cli.String("http-stats-secret"))
 	controller :=
-		utils.ContextValueExtract[*app.Controller](gCtx, utils.CtxRuntime)
+		utils.ContextValueExtract[*app.Controller](m.ctx, utils.CtxRuntime)
 
 	// basic auth for settings page
 	// settingsPageBAuth := basicauth.New(basicauth.Config{
 	// 	Users: map[string]string{
-	// 		gCli.String("internals-auth-username"): gCli.String("internals-auth-password"),
+	// 		m.cli.String("internals-auth-username"): m.cli.String("internals-auth-password"),
 	// 	},
 
 	// 	Realm: "Addie Internals",
@@ -321,12 +321,14 @@ func (m *Service) fiberRouterInitialization() {
 }
 
 func fiberErrorHandler(c *fiber.Ctx, err error) (_ error) {
+	log := utils.ContextValueExtract[*zerolog.Logger](c.UserContext(), utils.CtxZeroLogger)
+
 	// reject invalid requests
 	if strings.TrimSpace(c.Hostname()) == "" {
-		gLog.Warn().Msgf("invalid request from %s: %+v ; error - %+v",
+		log.Warn().Msgf("invalid request from %s: %+v ; error - %+v",
 			utils.IPFromFiberRequest(c), c, err)
 
-		sts := utils.ContextValueExtract[*stats.Stats](gCtx, utils.CtxStats)
+		sts := utils.ContextValueExtract[*stats.Stats](c.UserContext(), utils.CtxStats)
 		if sts != nil {
 			sts.WriteIncMetric(stats.IMHTTPServerRequest)
 			sts.WriteIncMetric(stats.IMHTTPServerInvalidRequest)
@@ -365,10 +367,10 @@ func fiberErrorHandler(c *fiber.Ctx, err error) (_ error) {
 
 func (m *Service) fhttpListenerInitialization() func() error {
 	reuseport, deferaccept, fastopen, backlog :=
-		gCli.Bool("http-adv-reuseport"),
-		gCli.Bool("http-adv-deferaccept"),
-		gCli.Bool("http-adv-tcpfastopen"),
-		gCli.Int("http-adv-backlog")
+		m.cli.Bool("http-adv-reuseport"),
+		m.cli.Bool("http-adv-deferaccept"),
+		m.cli.Bool("http-adv-tcpfastopen"),
+		m.cli.Int("http-adv-backlog")
 
 	if !reuseport && !deferaccept && !fastopen && backlog == 0 {
 		return nil
@@ -381,9 +383,9 @@ func (m *Service) fhttpListenerInitialization() func() error {
 		Backlog:     backlog,
 	}
 
-	ln, e := tcpopts.NewListener("tcp4", gCli.String("http-listen-addr"))
+	ln, e := tcpopts.NewListener("tcp4", m.cli.String("http-listen-addr"))
 	if e != nil {
-		gLog.Error().Msg("could not initialize custom net.Listener, due to - " + e.Error())
+		m.log.Error().Msg("could not initialize custom net.Listener, due to - " + e.Error())
 		return nil
 	}
 
