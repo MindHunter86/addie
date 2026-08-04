@@ -273,6 +273,10 @@ func (m *Service) fiberRouterInitialization() {
 
 	// Routes
 
+	// !!! TODO
+	// ! Add support for encrypted urls
+	// m.fb.Get("/payload/:payload", encrypted)
+
 	// group api - /api
 	api := m.fb.Group("/api")
 
