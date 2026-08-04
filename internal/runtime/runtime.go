@@ -4,7 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/MindHunter86/addie/utils"
+	"github.com/MindHunter86/addie/internal/utils"
+	autils "github.com/MindHunter86/addie/utils"
 	"github.com/rs/zerolog"
 )
 
@@ -23,12 +24,12 @@ var (
 	ErrRuntimeUndefinedPatch = errors.New("given patch payload is undefined")
 
 	RuntimeUtilsBindings = map[string]RuntimePatchType{
-		utils.CfgLotteryChance:   RuntimePatchLottery,
-		utils.CfgQualityLevel:    RuntimePatchQuality,
-		utils.CfgAccessLogStdout: RuntimePatchAccessStdout,
-		utils.CfgAccessLogLevel:  RuntimePatchAccessLevel,
-		utils.CfgQualityBypass:   RuntimePatchQualityBypass,
-		utils.CfgForceRUMitigate: RuntimePatchForceRUMitigate,
+		autils.CfgLotteryChance:   RuntimePatchLottery,
+		autils.CfgQualityLevel:    RuntimePatchQuality,
+		autils.CfgAccessLogStdout: RuntimePatchAccessStdout,
+		autils.CfgAccessLogLevel:  RuntimePatchAccessLevel,
+		autils.CfgQualityBypass:   RuntimePatchQualityBypass,
+		autils.CfgForceRUMitigate: RuntimePatchForceRUMitigate,
 	}
 
 	// intenal
@@ -51,7 +52,7 @@ type (
 )
 
 func NewRuntime(c context.Context) (r *Runtime, e error) {
-	log = c.Value(utils.ContextKeyLogger).(*zerolog.Logger)
+	log = c.Value(utils.CtxZeroLogger).(*zerolog.Logger)
 	r = &Runtime{}
 
 	if r.Config, e = NewStorage(c); e != nil {

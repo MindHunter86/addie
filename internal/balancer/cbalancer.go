@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/MindHunter86/addie/internal/utils"
 	braceexp "github.com/MindHunter86/addie/internal/utils/brace_exp"
-	"github.com/MindHunter86/addie/utils"
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/rs/zerolog"
 	"github.com/spaolacci/murmur3"
@@ -38,8 +38,8 @@ func NewClusterBalancer(ctx context.Context, cluster BalancerCluster) *ClusterBa
 	upstream := make(upstream)
 
 	return &ClusterBalancer{
-		log:      ctx.Value(utils.ContextKeyLogger).(*zerolog.Logger),
-		ccx:      ctx.Value(utils.ContextKeyCliContext).(*cli.Context),
+		log:      ctx.Value(utils.CtxZeroLogger).(*zerolog.Logger),
+		ccx:      ctx.Value(utils.CtxCliContext).(*cli.Context),
 		cluster:  cluster,
 		upstream: &upstream,
 	}
