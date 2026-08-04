@@ -256,7 +256,7 @@ func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte,
 }
 
 // skipcq: SCC-U1000 temporary disabled
-func (m *DynamicConfig) unmarshalExternalSource(payload []byte) (_ *ExternalSource, _ error) {
+func (*DynamicConfig) unmarshalExternalSource(payload []byte) (_ *ExternalSource, _ error) {
 	var es ExternalSource
 	return &es, yaml.Unmarshal(payload, &es)
 }
