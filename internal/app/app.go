@@ -27,7 +27,7 @@ var (
 	gCtx   context.Context
 	gAbort context.CancelFunc
 
-	gConsul *consulClient
+	// gConsul *consulClient
 
 	gAniApi *ApiClient
 
@@ -143,6 +143,17 @@ func (m *App) Bootstrap() (e error) {
 	m.bareBalancer = balancer.NewClusterBalancer(gCtx, balancer.BalancerClusterNodes)
 	m.cloudBalancer = balancer.NewClusterBalancer(gCtx, balancer.BalancerClusterCloud)
 
+	var bservers, cservers []string
+	if bservers, e = m.bareBalancer.GetFQDNsByBrace(gCli.String("balancer-node-servers")); e != nil {
+		return
+	}
+	if cservers, e = m.cloudBalancer.GetFQDNsByBrace(gCli.String("balancer-cloud-servers")); e != nil {
+		return
+	}
+
+	m.bareBalancer.UpdateServersByFQDN(bservers)
+	m.cloudBalancer.UpdateServersByFQDN(cservers)
+
 	// update API controller after balancers initialization
 	gCtx = context.WithValue(gCtx, utils.ContextKeyBalancers,
 		map[balancer.BalancerCluster]balancer.Balancer{
@@ -152,16 +163,6 @@ func (m *App) Bootstrap() (e error) {
 
 	gController.WithContext(gCtx)
 	gController.SetReady()
-
-	// consul
-	gLog.Info().Msg("starting consul client...")
-	if gConsul, e = newConsulClient(m.cloudBalancer, m.bareBalancer); e != nil {
-		return
-	}
-
-	// consul bootstrap
-	gLog.Info().Msg("bootstrap consul subsystems...")
-	gofunc(&wg, gConsul.bootstrap)
 
 	// http
 	gofunc(&wg, func() {

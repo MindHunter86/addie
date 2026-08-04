@@ -276,7 +276,9 @@ func (m *Service) fiberRouterInitialization() {
 	// group api - /api
 	api := m.fb.Group("/api")
 	api.Post("logger/level", controller.SetLoggerLevel)
-	api.Post("quality", controller.UpdateQualityRewrite)
+
+	// TODO - waiting migration on Dynamic Config
+	// api.Post("quality", controller.UpdateQualityRewrite)
 
 	// group upstream
 	upstr := api.Group("/balancer")

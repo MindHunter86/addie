@@ -1,13 +1,12 @@
 package flags
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/urfave/cli/v2"
 )
 
-func applicationFlags(_ bool, appname string) []cli.Flag {
+func applicationFlags(_ bool) []cli.Flag {
 	// validate := validator.New()
 
 	return []cli.Flag{
@@ -26,43 +25,66 @@ func applicationFlags(_ bool, appname string) []cli.Flag {
 
 		// anilibria APIs settings
 		&cli.StringFlag{
-			Name:  "anilibria-baseurl",
-			Usage: "",
-			Value: "https://www.anilibria.tv",
-		},
-		&cli.StringFlag{
-			Name:  "anilibria-api-baseurl",
-			Usage: "",
-			Value: "https://api.anilibria.tv/v2",
+			Name:     "anilibria-api-baseurl",
+			Category: "App: AniLibria API",
+			Usage:    "",
+			Value:    "https://api.anilibria.tv/v2",
 		},
 
 		// balancing settings
 		&cli.UintFlag{
-			Name:  "balancer-server-max-fails",
-			Usage: "max fails for one request; max value - 10",
-			Value: 3,
+			Name:     "balancer-server-max-fails",
+			Category: "App: Balancer",
+			Usage:    "max fails for one request; max value - 10",
+			Value:    3,
 		},
 		&cli.BoolFlag{
-			Name:  "balancer-full-bypass",
-			Usage: "use X-Server header as a balance target",
+			Name:     "balancer-full-bypass",
+			Category: "App: Balancer",
+			Usage:    "use X-Server header as a balance target",
 		},
 		&cli.BoolFlag{
-			Name:  "balancer-highcost-zone",
-			Usage: "enable all mitigation, migration and bypass methods configured in consul for this instance",
+			Name:     "balancer-highcost-zone",
+			Category: "App: Balancer",
+			Usage:    "enable all mitigation, migration and bypass methods configured in consul for this instance",
 		},
 		&cli.IntFlag{
-			Name:  "balancer-softer-step",
-			Value: 99,
+			Name:     "balancer-softer-step",
+			Category: "App: Balancer",
+			Value:    99,
 			Usage: `balancer 'soft' mode for soft witching between qualities;
 			'step' - is a static variable with some 'starting' value; each tick it will be decreased by 1;
 			a request's quality will be updated when 'hardcoded payload' mod 'step' == 0`,
 		},
 		&cli.DurationFlag{
-			Name:  "balancer-softer-tick",
-			Value: 1 * time.Second,
+			Name:     "balancer-softer-tick",
+			Category: "App: Balancer",
+			Value:    1 * time.Second,
 			Usage: `balancer 'soft' mode for soft witching between qualities;
 			'tick' - is a ticker duration; each tick, the step will be decreased by 1;
 			a request's quality will be updated when 'hardcoded payload' mod 'step' == 0`,
+		},
+		&cli.StringFlag{
+			Name:     "balancer-node-servers",
+			Category: "App: Balancer",
+			Usage:    "cache{1..2}.example.com",
+			Value:    "cache{1..9}.libria.fun",
+		},
+		&cli.StringFlag{
+			Name:     "balancer-cloud-servers",
+			Category: "App: Balancer",
+			Usage:    "cache-cloud{1..2}.example.com",
+			Value:    "cache-cloud{1..18}.libria.fun",
+		},
+		&cli.DurationFlag{
+			Name:     "balancer-server-check-timeout",
+			Category: "App: Balancer",
+			Value:    1 * time.Second,
+		},
+		&cli.DurationFlag{
+			Name:     "balancer-server-check-interval",
+			Category: "App: Balancer",
+			Value:    10 * time.Second,
 		},
 
 		// link generation settings
@@ -80,34 +102,12 @@ func applicationFlags(_ bool, appname string) []cli.Flag {
 			DefaultText: "CHANGE DEFAULT SECRET",
 		},
 
-		// consul settings
-		&cli.BoolFlag{
-			Name: "consul-ignore-errors",
-		},
+		// legacy consul settings
 		&cli.StringFlag{
-			Name:    "consul-address",
-			Usage:   "consul API uri",
-			Value:   "http://127.0.0.1:8500",
-			EnvVars: []string{"CONSUL_ADDRESS"},
-		},
-		&cli.StringFlag{
-			Name:  "consul-service-nodes",
-			Usage: "service name (id) with cache-nodes used for balancing",
-			Value: "cache-node-internal",
-		},
-		&cli.StringFlag{
-			Name:  "consul-service-cloud",
-			Usage: "service name (id) with cache-clouds used for balancing",
-			Value: "cache-cloud-ingress",
-		},
-		&cli.StringFlag{
-			Name:  "consul-entries-domain",
-			Usage: "add domain for all service entries",
-			Value: "libria.fun",
-		},
-		&cli.StringFlag{
-			Name:  "consul-kv-prefix",
-			Value: fmt.Sprintf("anilibria/%s", appname),
+			Name:     "consul-entries-domain",
+			Category: "Legacy",
+			Usage:    "add domain for all service entries",
+			Value:    "",
 		},
 	}
 }

@@ -25,6 +25,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Name:     "http-realip-header",
 			Category: "HTTP server settings",
 			Value:    fiber.HeaderXForwardedFor,
+			Hidden:   expertMode,
 		},
 		&cli.BoolFlag{
 			Name:     "http-prefork",
@@ -38,17 +39,17 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			DisableDefaultText: true,
 		},
 		&cli.DurationFlag{
-			Name:     "http-read-timeout",
+			Name:     "http-timeout-read",
 			Category: "HTTP server settings",
 			Value:    10 * time.Second,
 		},
 		&cli.DurationFlag{
-			Name:     "http-write-timeout",
+			Name:     "http-timeout-write",
 			Category: "HTTP server settings",
 			Value:    5 * time.Second,
 		},
 		&cli.DurationFlag{
-			Name:     "http-idle-timeout",
+			Name:     "http-timeout-idle",
 			Category: "HTTP server settings",
 			Value:    10 * time.Minute,
 		},
@@ -63,18 +64,21 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Category:           "HTTP server settings",
 			Usage:              "enable golang http-pprof methods",
 			DisableDefaultText: true,
+			Hidden:             expertMode,
 		},
 		&cli.StringFlag{
 			Name:     "http-pprof-prefix",
 			Category: "HTTP server settings",
 			Usage:    "it should start with (but not end with) a slash. Example: '/test'",
 			EnvVars:  []string{"PPROF_PREFIX"},
+			Hidden:   expertMode,
 		},
 		&cli.StringFlag{
 			Name:     "http-pprof-secret",
 			Category: "HTTP server settings",
 			Usage:    "define static secret in x-pprof-secret header for avoiding unauthorized access",
 			EnvVars:  []string{"PPROF_SECRET"},
+			Hidden:   expertMode,
 		},
 		&cli.StringFlag{
 			Name:     "http-stats-secret",
@@ -82,6 +86,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:    "define static secret in Authorization header for avoiding unauthorized access",
 			EnvVars:  []string{"STATS_SECRET"},
 			Value:    "12de9f94ac51",
+			Hidden:   expertMode,
 		},
 
 		// fasthttp advanced settings
@@ -131,9 +136,10 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 		// !! LEGACY
 		// !! LEGACY
 		&cli.BoolFlag{
-			Name:  "http-cors",
-			Usage: "enable cors requests serving",
-			Value: true,
+			Name:     "http-cors",
+			Category: "Legacy",
+			Usage:    "enable cors requests serving",
+			Value:    true,
 		},
 	}
 }

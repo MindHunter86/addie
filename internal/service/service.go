@@ -47,9 +47,10 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			TrustedProxies:          strings.Split(gCli.String("http-trusted-proxies"), ","),
 			ProxyHeader:             gCli.String("http-realip-header"),
 
-			AppName:               c.App.Name,
-			ServerHeader:          fmt.Sprintf("%s/%s", c.App.Name, c.App.Version),
 			DisableStartupMessage: true,
+
+			AppName:      c.App.Name,
+			ServerHeader: fmt.Sprintf("%s/%s", c.App.Name, c.App.Version),
 
 			StrictRouting:      true,
 			DisableDefaultDate: false,
@@ -60,9 +61,9 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			DisablePreParseMultipartForm: true,
 
 			Prefork:      gCli.Bool("http-prefork"),
-			IdleTimeout:  gCli.Duration("http-idle-timeout"),
-			ReadTimeout:  gCli.Duration("http-read-timeout"),
-			WriteTimeout: gCli.Duration("http-write-timeout"),
+			IdleTimeout:  gCli.Duration("http-timeout-idle"),
+			ReadTimeout:  gCli.Duration("http-timeout-read"),
+			WriteTimeout: gCli.Duration("http-timeout-write"),
 
 			Concurrency: gCli.Int("http-concurrency-conns"),
 
@@ -79,6 +80,9 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			},
 
 			ErrorHandler: fiberErrorHandler,
+
+			// JSONEncoder: easyjson.Marshal,
+			// JSONDecoder: easyjson.Unmarshal,
 
 			// todo : we need fasthttp.MaxConnsPerIP
 		}),

@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	utl "github.com/MindHunter86/addie/internal/utils"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
@@ -30,7 +31,7 @@ const (
 
 var ParamDefaults = map[StorageParam]interface{}{
 	ParamLottery:         100,
-	ParamQuality:         utils.TitleQualityHD,
+	ParamQuality:         utils.TitleQualityFHD,
 	ParamAccessStdout:    1,
 	ParamAccessLevel:     zerolog.InfoLevel,
 	ParamQualityBypass:   nil,
@@ -60,8 +61,8 @@ var (
 
 func NewStorage(c context.Context) (st *Storage, _ error) {
 	done = c.Done
-
 	ccx := c.Value(utils.ContextKeyCliContext).(*cli.Context)
+
 	deployStep, deployInteration =
 		ccx.Int("balancer-softer-step"),
 		ccx.Duration("balancer-softer-tick")
@@ -72,6 +73,11 @@ func NewStorage(c context.Context) (st *Storage, _ error) {
 
 	if deployInteration < 10*time.Second {
 		log.Warn().Msg("low value detected for softer-tick arg")
+	}
+
+	if ccx.App.Version != utl.DevelVersionIdent {
+		ParamDefaults[ParamAccessStdout] = 0
+		ParamDefaults[ParamAccessLevel] = zerolog.InfoLevel
 	}
 
 	st = &Storage{

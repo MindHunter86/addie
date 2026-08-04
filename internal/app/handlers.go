@@ -11,10 +11,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-var (
-	errFbApiInvalidMode    = errors.New("mode argument is invalid; values soft, hard are permited only")
-	errFbApiInvalidQuality = errors.New("quality argument is invalid; 480, 720, 1080 values are permited only")
-)
+// var (
+// 	errFbApiInvalidMode    = errors.New("mode argument is invalid; values soft, hard are permited only")
+// 	errFbApiInvalidQuality = errors.New("quality argument is invalid; 480, 720, 1080 values are permited only")
+// )
 
 func (*App) fbHndApiPreCondErr(ctx *fiber.Ctx) error {
 	switch ctx.Locals("errors").(appMidError) {
@@ -89,7 +89,7 @@ func (m *App) fbHndApiCoreBalance(ctx *fiber.Ctx) (e error) {
 	buf.Write(sub[utils.ChunkEpisodeId])
 	buf.Write(sub[utils.ChunkQualityLevel])
 
-	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]))
+	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]), 0)
 	if errors.Is(e, balancer.ErrServerUnavailable) {
 		gLog.Debug().Err(e).Msg("balancer soft error; fallback to random balancing")
 		return ctx.Next()
@@ -114,7 +114,7 @@ func (m *App) fbHndBlcNodesBalance(ctx *fiber.Ctx) error {
 	buf.Write(sub[utils.ChunkEpisodeId])
 	buf.Write(sub[utils.ChunkQualityLevel])
 
-	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]))
+	_, server, e := m.bareBalancer.BalanceByChunk(buf.String(), string(sub[utils.ChunkName]), 0)
 	if errors.Is(e, balancer.ErrServerUnavailable) {
 		gLog.Debug().Err(e).Msg("balancer soft error; fallback to random balancing")
 		return ctx.Next()
@@ -123,7 +123,12 @@ func (m *App) fbHndBlcNodesBalance(ctx *fiber.Ctx) error {
 		return ctx.Next()
 	}
 
-	srv := strings.ReplaceAll(server.Name, "-node", "") + "." + gCli.String("consul-entries-domain")
+	var srv string
+	if dm := gCli.String("consul-entries-domain"); dm != "" {
+		srv = strings.ReplaceAll(server.Name, "-node", "") + "." + gCli.String("consul-entries-domain")
+	} else {
+		srv = strings.ReplaceAll(server.Name, "-node", "")
+	}
 	ctx.Set("X-Location", srv)
 
 	return ctx.SendStatus(fiber.StatusNoContent)
