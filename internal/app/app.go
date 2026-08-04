@@ -24,8 +24,7 @@ var (
 	gCli *cli.Context
 	gLog *zerolog.Logger
 
-	gCtx   context.Context
-	gAbort context.CancelFunc
+	gCtx context.Context
 
 	// gConsul *consulClient
 
@@ -35,7 +34,8 @@ var (
 )
 
 type App struct {
-	fb *fiber.App
+	fb    *fiber.App
+	abort context.CancelFunc
 
 	cache   *CachedTitlesBucket
 	runtime *runtime.Runtime
@@ -93,7 +93,6 @@ func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 func (m *App) Bootstrap() (e error) {
 	var wg sync.WaitGroup
 	var echan = make(chan error, 32)
-	var rpatcher = make(chan *runtime.RuntimePatch, 1)
 
 	// goroutine helper
 	gofunc := func(w *sync.WaitGroup, p func()) {
@@ -105,16 +104,14 @@ func (m *App) Bootstrap() (e error) {
 		}(w.Done, p)
 	}
 
-	gCtx, gAbort = context.WithCancel(context.Background())
+	gCtx, m.abort = context.WithCancel(context.Background())
 	gCtx = context.WithValue(gCtx, utils.ContextKeyLogger, gLog)
 	gCtx = context.WithValue(gCtx, utils.ContextKeyCliContext, gCli)
-	gCtx = context.WithValue(gCtx, utils.ContextKeyAbortFunc, gAbort)
-	gCtx = context.WithValue(gCtx, utils.ContextKeyRPatcher, rpatcher)
 
 	// defer m.checkErrorsBeforeClosing(echan)
 	// defer wg.Wait() // !!
 	defer gLog.Debug().Msg("waiting for opened goroutines")
-	defer gAbort()
+	defer m.abort()
 
 	// BOOTSTRAP SECTION:
 	// common
@@ -135,7 +132,6 @@ func (m *App) Bootstrap() (e error) {
 	if m.runtime, e = runtime.NewRuntime(gCtx); e != nil {
 		return
 	}
-	gCtx = context.WithValue(gCtx, utils.ContextKeyRuntime, m.runtime)
 
 	// balancer V2
 	gLog.Info().Msg("bootstrap balancer_v2 subsystems...")
@@ -155,13 +151,7 @@ func (m *App) Bootstrap() (e error) {
 	m.cloudBalancer.UpdateServersByFQDN(cservers)
 
 	// update API controller after balancers initialization
-	gCtx = context.WithValue(gCtx, utils.ContextKeyBalancers,
-		map[balancer.BalancerCluster]balancer.Balancer{
-			balancer.BalancerClusterCloud: m.cloudBalancer,
-			balancer.BalancerClusterNodes: m.bareBalancer,
-		})
-
-	gController.WithContext(gCtx)
+	gController.WithContext(gCtx, m.bareBalancer, m.cloudBalancer)
 	gController.SetReady()
 
 	// http
@@ -197,17 +187,12 @@ func (m *App) loop(_ chan error, done func()) {
 	gLog.Debug().Msg("initiate main event loop...")
 	defer gLog.Debug().Msg("main event loop has been closed")
 
-	rpatcher := gCtx.Value(utils.ContextKeyRPatcher).(chan *runtime.RuntimePatch)
-
 LOOP:
 	for {
 		select {
-		case patch := <-rpatcher:
-			gLog.Debug().Msg("new configuration detected, applying...")
-			m.runtime.ApplyPatch(patch)
 		case <-kernSignal:
 			gLog.Info().Msg("kernel signal has been caught; initiate application closing...")
-			gAbort()
+			m.abort()
 			break LOOP
 		// case err := <-errs:
 		// 	gLog.Error().Err(err).Msg("there are internal errors from one of application submodule")
