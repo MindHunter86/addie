@@ -59,10 +59,10 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 	source := strings.TrimSpace(cli.String("dynamic-config-source"))
 
 	// check if dynamic-config-source is url or file
-	if isURL(source) {
-		dc.url = source
-	} else if isPath(source) {
+	if isPath(source) {
 		dc.path = source
+	} else if isURL(source) {
+		dc.url = source
 	} else {
 		return nil, errors.New("could not parse given dynamic-config-source; should be URL or path")
 	}

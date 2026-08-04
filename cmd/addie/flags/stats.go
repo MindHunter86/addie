@@ -3,10 +3,11 @@ package flags
 import (
 	"time"
 
+	"github.com/MindHunter86/addie/internal/utils/validation"
 	"github.com/urfave/cli/v2"
 )
 
-func statsFlags(expertMode bool) []cli.Flag {
+func statsFlags(expertMode bool, v *validation.Validator) []cli.Flag {
 	return []cli.Flag{
 		// stats settings
 		&cli.StringFlag{
@@ -33,6 +34,10 @@ func statsFlags(expertMode bool) []cli.Flag {
 			Usage:    "must be a multiple of 5 seconds",
 			Hidden:   expertMode,
 			Value:    5 * time.Second,
+
+			Action: func(_ *cli.Context, d time.Duration) error {
+				return v.Var("stats-metrics-interval", d, "gte=5s")
+			},
 		},
 		&cli.DurationFlag{
 			Name:     "stats-metrics-loop-warn",
