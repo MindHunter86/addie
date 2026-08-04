@@ -31,8 +31,7 @@ func (m *App) fiberConfigure() {
 		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
 			rlog(c).Error().Str("request", c.Request().String()).Bytes("stack", debug.Stack()).
 				Msg("panic has been caught")
-			_, _ = os.Stderr.WriteString(fmt.Sprintf("panic: %v\n%s\n", e, debug.Stack())) //nolint:errcheck // This will never fail
-			_, _ = fmt.Fprintf(os.Stderr, "panic: %v\n%s\n", e, debug.Stack())
+			_, _ = fmt.Fprintf(os.Stderr, "panic: %v\n%s\n", e, debug.Stack()) //nolint:errcheck // This will never fail
 
 			c.Status(fiber.StatusInternalServerError)
 		},

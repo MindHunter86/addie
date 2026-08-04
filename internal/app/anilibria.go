@@ -92,7 +92,7 @@ func NewApiClient() (*ApiClient, error) {
 		},
 	}
 
-	return apiClient, apiClient.getApiBaseUrl()
+	return apiClient, apiClient.getApiBaseUrl() // skipcq: GO-W4006 legacy connector, will be deleted soon
 }
 
 func (m *ApiClient) getApiBaseUrl() (e error) {

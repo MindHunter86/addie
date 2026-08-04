@@ -153,15 +153,21 @@ func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
 }
 
 func (m *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
-	keys = make([]string, 0, 32)
-
 	for _, cat := range c.App.VisibleFlagCategories() {
 		if cat.Name() != catname {
 			continue
 		}
 
+		if len(cat.Flags()) == 0 {
+			continue
+		}
+
+		if m.keys == nil {
+			m.keys = make([]string, 0, len(cat.Flags()))
+		}
+
 		for _, flag := range cat.Flags() {
-			keys = append(m.keys, flag.Names()...)
+			m.keys = append(m.keys, flag.Names()...)
 		}
 	}
 
