@@ -24,6 +24,7 @@ import (
 	"github.com/valyala/tcplisten"
 )
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *Service) fiberMiddlewareInitialization() {
 	// pprof profiler
 	// manual:
@@ -206,6 +207,7 @@ func (m *Service) fiberMiddlewareInitialization() {
 	}
 }
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *Service) fiberRouterInitialization() {
 	//
 	//	Router pre-initialization

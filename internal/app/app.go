@@ -46,7 +46,7 @@ func NewApp(s io.Writer) (app *App) {
 	return app
 }
 
-func (m *App) bootstrap(c context.Context) (e error) {
+func (m *App) bootstrap(_ context.Context) (e error) {
 	// BOOTSTRAP SECTION:
 	// common
 	const chunksplit = `^(\/[^\/]+\/[^\/]+\/[^\/]+\/)([^\/]+)\/([^\/]+)\/([^\/]+)\/([^.\/]+)\.ts$`

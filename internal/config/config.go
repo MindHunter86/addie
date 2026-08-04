@@ -152,7 +152,7 @@ func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
 	return m.http.downloadSourceFromURL(m.url, m.temp)
 }
 
-func (_ *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
+func (*DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
 	for _, cat := range c.App.VisibleFlagCategories() {
 		if cat.Name() != catname {
 			continue
