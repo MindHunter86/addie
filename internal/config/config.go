@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -217,25 +219,30 @@ func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte,
 		return nil, fmt.Errorf("rejecting file sized more than limit (size - %d; limit - %d)", size, m.mxsz)
 	}
 
-	// increase capacity for alloc minimize
-	if int64(cap(buf)) < size+1 {
-		buf = append(buf, make([]byte, 0, size+1-int64(len(buf)))...)
+	if size < 0 || uint64(size)+1 > uint64(math.MaxInt) {
+		return nil, fmt.Errorf("file is too large: %d bytes", size)
 	}
 
-	// os/file.go:791
+	// increase capacity to minimize allocs
+
+	if required := int(size) + 1; cap(buf) < required {
+		buf = slices.Grow(buf, required-len(buf))
+	}
+
+	// based on os/file.go:791
 	for {
-		n, err := fd.Read(buf[len(buf):cap(buf)])
-		buf = buf[:len(buf)+n]
-		if err != nil {
-			if err == io.EOF {
-				err = nil
-			}
-			return buf, err
+		if len(buf) == cap(buf) {
+			buf = slices.Grow(buf, 1)
 		}
 
-		if len(buf) >= cap(buf) {
-			d := append(buf[:cap(buf)], 0)
-			buf = d[:len(buf)]
+		n, err := fd.Read(buf[len(buf):cap(buf)])
+		buf = buf[:len(buf)+n]
+
+		if err != nil {
+			if err == io.EOF {
+				return buf, nil
+			}
+			return buf, err
 		}
 	}
 }
