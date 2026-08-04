@@ -48,7 +48,7 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			DisableDefaultDate: false,
 			DisableKeepalive:   false,
 
-			DisableHeaderNormalizing:     true,
+			DisableHeaderNormalizing:     false,
 			DisableDefaultContentType:    true,
 			DisablePreParseMultipartForm: true,
 
