@@ -101,13 +101,5 @@ func applicationFlags(_ bool) []cli.Flag {
 			EnvVars:     []string{"SIGN_SECRET"},
 			DefaultText: "CHANGE DEFAULT SECRET",
 		},
-
-		// legacy consul settings
-		&cli.StringFlag{
-			Name:     "consul-entries-domain",
-			Category: "Legacy",
-			Usage:    "add domain for all service entries",
-			Value:    "",
-		},
 	}
 }

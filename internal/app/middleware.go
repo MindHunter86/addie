@@ -219,13 +219,7 @@ func (m *App) fbMidAppBalance(ctx *fiber.Ctx) (e error) {
 			}
 
 			// if all ok (if no errors) - save destination and go to the next fiber handler:
-			if dm := gCli.String("consul-entries-domain"); dm != "" {
-				ctx.Locals("srv",
-					strings.ReplaceAll(server.Name, "-node", "")+"."+gCli.String("consul-entries-domain"))
-			} else {
-				ctx.Locals("srv", strings.ReplaceAll(server.Name, "-node", ""))
-			}
-
+			ctx.Locals("srv", strings.ReplaceAll(server.Name, "-node", ""))
 			return ctx.Next()
 		}
 	}
@@ -240,8 +234,7 @@ func (m *App) fbMidAppBalanceFallback(ctx *fiber.Ctx) error {
 		return e
 	}
 
-	ctx.Locals("srv",
-		strings.ReplaceAll(server.Name, "-node", "")+"."+gCli.String("consul-entries-domain"))
+	ctx.Locals("srv", strings.ReplaceAll(server.Name, "-node", ""))
 	return ctx.Next()
 }
 
