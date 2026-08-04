@@ -5,10 +5,6 @@ type ContextKey uint8
 const (
 	ContextKeyLogger ContextKey = iota
 	ContextKeyCliContext
-	ContextKeyAbortFunc
-	ContextKeyRPatcher
-	ContextKeyRuntime
-	ContextKeyBalancers
 )
 
 const (
@@ -50,11 +46,11 @@ const (
 	TitleQualityFHD
 )
 
-var GetTitleQualityByString = map[string]TitleQuality{
-	"480":  TitleQualitySD,
-	"720":  TitleQualityHD,
-	"1080": TitleQualityFHD,
-}
+// var GetTitleQualityByString = map[string]TitleQuality{
+// 	"480":  TitleQualitySD,
+// 	"720":  TitleQualityHD,
+// 	"1080": TitleQualityFHD,
+// }
 
 func (m *TitleQuality) String() string {
 	switch *m {

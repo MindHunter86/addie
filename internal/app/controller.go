@@ -7,17 +7,12 @@ import (
 	"sync"
 
 	"github.com/MindHunter86/addie/internal/balancer"
-	"github.com/MindHunter86/addie/internal/runtime"
-	"github.com/MindHunter86/addie/utils"
 	"github.com/gofiber/fiber/v2"
-	"github.com/rs/zerolog"
 )
 
 type Controller struct {
-	mu sync.RWMutex
-
+	mu        sync.RWMutex
 	balancers map[balancer.BalancerCluster]balancer.Balancer
-	runtime   *runtime.Runtime
 
 	isReady bool
 }
@@ -33,13 +28,36 @@ func (m *Controller) SetReady() {
 	m.isReady = true
 }
 
-func (m *Controller) WithContext(c context.Context) *Controller {
+func (m *Controller) WithContext(_ context.Context, bare, cloud balancer.Balancer) *Controller {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.balancers = c.Value(utils.ContextKeyBalancers).(map[balancer.BalancerCluster]balancer.Balancer)
-	m.runtime = c.Value(utils.ContextKeyRuntime).(*runtime.Runtime)
+	m.balancers = map[balancer.BalancerCluster]balancer.Balancer{
+		balancer.BalancerClusterCloud: cloud,
+		balancer.BalancerClusterNodes: bare,
+	}
+
 	return m
+}
+
+func (m *Controller) GetBalancerStats(c *fiber.Ctx) (e error) {
+	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
+	if e != nil {
+		return
+	}
+
+	fmt.Fprintln(c, m.balancers[cluster].GetStats())
+	return respondPlainWithStatus(c, fiber.StatusOK)
+}
+
+func (m *Controller) BalancerStatsReset(c *fiber.Ctx) (e error) {
+	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
+	if e != nil {
+		return
+	}
+
+	m.balancers[cluster].ResetStats()
+	return respondPlainWithStatus(c, fiber.StatusNoContent)
 }
 
 // ---
@@ -66,60 +84,6 @@ func (m *Controller) getBalancerByString(input string) (_ balancer.BalancerClust
 	}
 
 	return cluster, e
-}
-
-func (m *Controller) GetBalancerStats(c *fiber.Ctx) (e error) {
-	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
-	if e != nil {
-		return
-	}
-
-	fmt.Fprintln(c, m.balancers[cluster].GetStats())
-	return respondPlainWithStatus(c, fiber.StatusOK)
-}
-
-func (m *Controller) BalancerStatsReset(c *fiber.Ctx) (e error) {
-	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
-	if e != nil {
-		return
-	}
-
-	m.balancers[cluster].ResetStats()
-	return respondPlainWithStatus(c, fiber.StatusNoContent)
-}
-
-func (m *Controller) BalancerUpstreamReset(c *fiber.Ctx) (e error) {
-	cluster, e := m.getBalancerByString(strings.TrimSpace(c.Query("cluster")))
-	if e != nil {
-		return
-	}
-
-	m.balancers[cluster].ResetUpstream()
-	return respondPlainWithStatus(c, fiber.StatusNoContent)
-}
-
-func (m *Controller) SetLoggerLevel(c *fiber.Ctx) error {
-	level := strings.TrimSpace(c.Query("level"))
-
-	switch level {
-	case "trace":
-		zerolog.SetGlobalLevel(zerolog.TraceLevel)
-	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
-	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
-	default:
-		return fiber.NewError(fiber.StatusBadRequest, "unknown level sent")
-	}
-
-	rlog(c).Error().Msgf("[falsepositive]> new log level applied - %s", level)
-	fmt.Fprintln(c, level+" logger level has been applied")
-
-	return respondPlainWithStatus(c, fiber.StatusOK)
 }
 
 // TODO - waiting migration on Dynamic Config

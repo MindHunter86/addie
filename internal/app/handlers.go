@@ -98,7 +98,7 @@ func (m *App) fbHndApiCoreBalance(ctx *fiber.Ctx) (e error) {
 		return ctx.Next()
 	}
 
-	srv := strings.ReplaceAll(server.Name, "-node", "") + "." + gCli.String("consul-entries-domain")
+	srv := strings.ReplaceAll(server.Name, "-node", "")
 	ctx.Locals("core", srv)
 
 	return ctx.Next()
@@ -123,12 +123,7 @@ func (m *App) fbHndBlcNodesBalance(ctx *fiber.Ctx) error {
 		return ctx.Next()
 	}
 
-	var srv string
-	if dm := gCli.String("consul-entries-domain"); dm != "" {
-		srv = strings.ReplaceAll(server.Name, "-node", "") + "." + gCli.String("consul-entries-domain")
-	} else {
-		srv = strings.ReplaceAll(server.Name, "-node", "")
-	}
+	srv := strings.ReplaceAll(server.Name, "-node", "")
 	ctx.Set("X-Location", srv)
 
 	return ctx.SendStatus(fiber.StatusNoContent)
@@ -142,7 +137,7 @@ func (m *App) fbHndBlcNodesBalanceFallback(ctx *fiber.Ctx) error {
 		return e
 	}
 
-	srv := strings.ReplaceAll(server.Name, "-node", "") + "." + gCli.String("consul-entries-domain")
+	srv := strings.ReplaceAll(server.Name, "-node", "")
 	ctx.Set("X-Location", srv)
 
 	return ctx.SendStatus(fiber.StatusNoContent)

@@ -158,16 +158,15 @@ func (m *App) fiberConfigure() {
 
 	// group api - /api
 	api := m.fb.Group("/api")
-	api.Post("logger/level", gController.SetLoggerLevel)
 
 	// TODO - waiting migration on Dynamic Config
+	// api.Post("logger/level", gController.SetLoggerLevel)
 	// api.Post("quality", gController.UpdateQualityRewrite)
 
 	// group upstream
 	upstr := api.Group("/balancer")
 	upstr.Get("/stats", gController.GetBalancerStats)
 	upstr.Post("/stats/reset", gController.BalancerStatsReset)
-	upstr.Post("/reset", gController.BalancerUpstreamReset)
 
 	upstrCluster := upstr.Group("/cluster", skip.New(m.fbHndApiPreCondErr, m.fbMidBlcPreCond))
 	upstrCluster.Get("/cache-nodes",
