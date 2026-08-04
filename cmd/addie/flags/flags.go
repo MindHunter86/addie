@@ -9,6 +9,7 @@ func FlagsInitialization(em bool) (f []cli.Flag) {
 	f = append(f, applicationFlags(em)...)
 	f = append(f, databaseFlags(em)...)
 	f = append(f, dynamicFlags(em)...)
+	f = append(f, statsFlags(em)...)
 
 	return f
 }
