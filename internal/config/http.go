@@ -84,7 +84,7 @@ func (m *HttpClient) downloadSourceFromURL(url, temp string) (e error) {
 	}
 
 	var fd *os.File
-	if fd, e = os.OpenFile(temp, os.O_RDWR, 0644); e != nil {
+	if fd, e = os.OpenFile(temp, os.O_RDWR, 0600); e != nil {
 		return utils.ExtraErrorWrapper(e, "could not prepare tmp file for source download")
 	}
 	defer fd.Close()

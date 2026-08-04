@@ -3,7 +3,6 @@ package service
 import (
 	"io"
 
-	"github.com/MindHunter86/addie/internal/stats"
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/valyala/bytebufferpool"
 
@@ -50,12 +49,4 @@ func writeJsonErrorFastTo(to io.Writer, c int, m string) (e error) {
 // fiber 404 handler with minimal allocations
 func fiber404ErrorHandler(*fiber.Ctx) error {
 	return utils.AcquireFiberError(fiber.StatusNotFound, "requested page could not be found")
-}
-
-func statIncMetricFiberHandler(m stats.IncrementMetric) func(c *fiber.Ctx) error {
-	return func(c *fiber.Ctx) error {
-		ctx := c.UserContext()
-		utils.ContextValueExtract[*stats.Stats](ctx, utils.CtxStats).WriteIncMetric(m)
-		return c.Next()
-	}
 }

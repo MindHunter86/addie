@@ -15,7 +15,7 @@ func isPath(path string) bool {
 	return fs.ValidPath(path)
 }
 
-func getTmpFilePath(appname string, tmppath string) (_ string, e error) {
+func getTmpFilePath(appname, tmppath string) (_ string, e error) {
 	var fd *os.File
 	if fd, e = os.CreateTemp(tmppath, appname+"_dynamic*.yaml"); e != nil {
 		return

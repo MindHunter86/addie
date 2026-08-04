@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/MindHunter86/addie/internal/runtime"
 	"github.com/MindHunter86/addie/internal/stats"
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/gofiber/fiber/v2"
@@ -34,8 +33,6 @@ type Service struct {
 	wg sync.WaitGroup
 
 	abort context.CancelFunc
-
-	runtime *runtime.Runtime
 }
 
 func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {

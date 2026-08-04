@@ -33,21 +33,21 @@ type DynamicConfig struct {
 	fmtx sync.RWMutex
 }
 
-func test() {
-	// cli := utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
-	// for _, fl := range cli.App.Flags {
-	// 	fl.Names()
+// func test() {
+// 	cli := utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
+// 	for _, fl := range cli.App.Flags {
+// 		fl.Names()
 
-	// }
+// 	}
 
-	// for _, cat := range cli.App.VisibleFlagCategories() {
-	// }
+// 	for _, cat := range cli.App.VisibleFlagCategories() {
+// 	}
 
-	// lala := dc.cli.Generic("1").(DynamicFlag[int])
-	// if abc := *lala.Load(); abc != 1 {
-	// 	panic("")
-	// }
-}
+// 	lala := dc.cli.Generic("1").(DynamicFlag[int])
+// 	if abc := *lala.Load(); abc != 1 {
+// 		panic("")
+// 	}
+// }
 
 func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e error) {
 	dc = new(DynamicConfig)
@@ -133,7 +133,7 @@ func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
 	return m.wach.Add(m.temp)
 }
 
-func (m *DynamicConfig) onServiceDestruct(c context.Context) error {
+func (m *DynamicConfig) onServiceDestruct(_ context.Context) error {
 	return m.wach.Close()
 }
 
@@ -170,6 +170,7 @@ func (m *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (key
 	return
 }
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *DynamicConfig) updateDynamicFlags() (e error) {
 	// load new values
 	buf := bytebufferpool.Get()
@@ -194,6 +195,7 @@ func (m *DynamicConfig) updateDynamicFlags() (e error) {
 	return
 }
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte, e error) {
 	if path == "" {
 		return nil, os.ErrNotExist
@@ -238,7 +240,8 @@ func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte,
 	}
 }
 
-func (m *DynamicConfig) unmarshalExternalSource(payload []byte) (_ *ExternalSource, e error) {
+// skipcq: SCC-U1000 temporary disabled
+func (m *DynamicConfig) unmarshalExternalSource(payload []byte) (_ *ExternalSource, _ error) {
 	var es ExternalSource
 	return &es, yaml.Unmarshal(payload, &es)
 }

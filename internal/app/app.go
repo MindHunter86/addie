@@ -55,7 +55,7 @@ func NewApp(c *cli.Context, l *zerolog.Logger, s io.Writer) (app *App) {
 	app.syslogWriter = s
 
 	app.fb = fiber.New(fiber.Config{
-		EnableTrustedProxyCheck: len(gCli.String("http-trusted-proxies")) > 0,
+		EnableTrustedProxyCheck: gCli.String("http-trusted-proxies") == "",
 		TrustedProxies:          strings.Split(gCli.String("http-trusted-proxies"), ","),
 		ProxyHeader:             fiber.HeaderXForwardedFor,
 

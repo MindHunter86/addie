@@ -4,7 +4,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func databaseFlags(expertMode bool) []cli.Flag {
+func databaseFlags(_ bool) []cli.Flag {
 	return []cli.Flag{
 
 		// TODO - rewrite to path-prefix

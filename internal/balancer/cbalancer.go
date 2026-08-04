@@ -29,7 +29,7 @@ type ClusterBalancer struct {
 	ulock    sync.RWMutex
 	upstream *upstream
 
-	sync.RWMutex
+	mu   sync.RWMutex
 	size int
 	ips  []*net.IP
 }
@@ -119,11 +119,11 @@ func (*ClusterBalancer) getKeyFromChunkName(chunkname *string) (key string, e er
 }
 
 func (m *ClusterBalancer) getServer(idx1, idx2 uint64, try int) (ip *net.IP) {
-	if !m.TryRLock() {
+	if !m.mu.TryRLock() {
 		m.log.Warn().Msg("could not get lock for reading upstream; fallback to legacy balancing")
 		return
 	}
-	defer m.RUnlock()
+	defer m.mu.RUnlock()
 
 	if m.size == 0 {
 		return
@@ -142,11 +142,11 @@ func (m *ClusterBalancer) getServer(idx1, idx2 uint64, try int) (ip *net.IP) {
 }
 
 func (m *ClusterBalancer) getRandomServer() (ip *net.IP) {
-	if !m.TryRLock() {
+	if !m.mu.TryRLock() {
 		m.log.Error().Msg("could not get lock for reading upstream and force flag is false")
 		return
 	}
-	defer m.RUnlock()
+	defer m.mu.RUnlock()
 
 	if m.size == 0 {
 		m.log.Error().Msg("could not get random server because of empty upstream")
@@ -225,8 +225,8 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 	// }
 
 	// update "balancer" (slice that used for getNextServer)
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.ips, m.size = m.upstream.getIps(&m.ulock)
 	m.log.Trace().Interface("ips", m.ips).Msg("[II]")

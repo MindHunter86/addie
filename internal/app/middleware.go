@@ -72,7 +72,7 @@ func (m *App) fbMidAppPreCond(ctx *fiber.Ctx) (skip bool) {
 	ctx.Locals("srv", strings.TrimSpace(ctx.Get(apiHeaderServer)))
 
 	// match uri
-	if !m.chunkRegexp.Match([]byte(ctx.Get(apiHeaderUri))) {
+	if !m.chunkRegexp.MatchString(ctx.Get(apiHeaderUri)) {
 		ctx.Locals("errors", errs|errMidAppPreUriRegexp)
 		return
 	}
@@ -134,7 +134,7 @@ func (m *App) fbMidAppFakeQuality(ctx *fiber.Ctx) error {
 
 // if return value == true - Balance() will be skipped
 func (m *App) fbMidAppBalancerLottery(_ *fiber.Ctx) bool {
-	return gCli.Bool("balancer-full-bypass") || m.runtime.Config.Get(runtime.ParamLottery).(int) < rand.Intn(99)+1 // skipcq: GSC-G404 math/rand is enough
+	return gCli.Bool("balancer-full-bypass") || m.runtime.Config.Get(runtime.ParamLottery).(int) <= rand.Intn(99)+1 // skipcq: GSC-G404 math/rand is enough
 }
 
 func (m *App) fbMidAppBalance(ctx *fiber.Ctx) (e error) {
@@ -247,7 +247,7 @@ func (m *App) fbMidBlcPreCond(ctx *fiber.Ctx) bool {
 
 	if huri := strings.TrimSpace(ctx.Get(apiHeaderUri)); huri == "" {
 		errs = errs | errMidAppPreHeaderUri
-	} else if !m.chunkRegexp.Match([]byte(huri)) {
+	} else if !m.chunkRegexp.MatchString(huri) {
 		errs = errs | errMidAppPreUriRegexp
 	} else {
 		ctx.Locals("uri", &huri)

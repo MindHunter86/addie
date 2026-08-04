@@ -12,7 +12,7 @@ type BalancerServer struct {
 	Ip   net.IP
 	Name string
 
-	sync.RWMutex
+	mu          sync.RWMutex
 	isDown      bool
 	lastChanged time.Time
 
@@ -31,16 +31,16 @@ func newServer(l *zerolog.Logger, name string, ip *net.IP) *BalancerServer {
 }
 
 func (m *BalancerServer) statRequest() {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.lastRequestTime = time.Now()
 	m.handledRequests++
 }
 
 func (m *BalancerServer) resetStats() {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.lastRequestTime = time.Unix(0, 0)
 	m.handledRequests = uint64(0)
@@ -49,16 +49,16 @@ func (m *BalancerServer) resetStats() {
 func (m *BalancerServer) disable(disabled ...bool) {
 	disabled = append(disabled, true)
 
-	m.RLock()
+	m.mu.RLock()
 	unchanged := m.isDown == disabled[0]
-	m.RUnlock()
+	m.mu.RUnlock()
 
 	if unchanged {
 		return
 	}
 
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.lastChanged = time.Now()
 	m.isDown = disabled[0]
