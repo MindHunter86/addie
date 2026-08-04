@@ -8,10 +8,9 @@ import (
 	"time"
 
 	"github.com/MindHunter86/addie/cmd/addie/flags"
+	"github.com/MindHunter86/addie/internal/service"
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/urfave/cli/v2"
-
-	application "github.com/MindHunter86/addie/internal/app"
 )
 
 func main() {
@@ -53,8 +52,7 @@ func main() {
 		}()
 
 		// TODO - add access logger from saeko
-		// log, alog := ulog.SystemLogger(), ulog.AccessLogger()
-		log, _ := ulog.SystemLogger(), ulog.AccessLogger()
+		log, alog := ulog.SystemLogger(), ulog.AccessLogger()
 
 		// localbuilded versions tests
 		defer func() {
@@ -72,8 +70,7 @@ func main() {
 		log.Debug().Msgf("%s (%s) builded %s now is ready, starting main service...",
 			app.Name, version, buildtime)
 
-		// return service.NewService(c, log, alog).Bootstrap()
-		return application.NewApp(c, log, nil).Bootstrap()
+		return service.NewService(c, log, alog).Bootstrap()
 	}
 
 	// run configured application

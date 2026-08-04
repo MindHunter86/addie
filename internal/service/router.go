@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/MindHunter86/addie/internal/app"
 	"github.com/MindHunter86/addie/internal/stats"
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/gofiber/fiber/v2"
@@ -25,6 +24,7 @@ import (
 	"github.com/valyala/tcplisten"
 )
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *Service) fiberMiddlewareInitialization() {
 	// pprof profiler
 	// manual:
@@ -207,6 +207,7 @@ func (m *Service) fiberMiddlewareInitialization() {
 	}
 }
 
+// skipcq: SCC-U1000 temporary disabled
 func (m *Service) fiberRouterInitialization() {
 	//
 	//	Router pre-initialization
@@ -214,8 +215,10 @@ func (m *Service) fiberRouterInitialization() {
 
 	// dynamic settings and helpers:
 	statsToken := utils.UnsafeBytes(m.cli.String("http-stats-secret"))
-	controller :=
-		utils.ContextValueExtract[*app.Controller](m.ctx, utils.CtxRuntime)
+
+	// TODO : resolve with app.HandleRouter
+	// controller :=
+	// 	utils.ContextValueExtract[*app.Controller](m.ctx, utils.CtxRuntime)
 
 	// basic auth for settings page
 	// settingsPageBAuth := basicauth.New(basicauth.Config{
@@ -278,16 +281,17 @@ func (m *Service) fiberRouterInitialization() {
 	// m.fb.Get("/payload/:payload", encrypted)
 
 	// group api - /api
-	api := m.fb.Group("/api")
+	// api := m.fb.Group("/api")
 
 	// TODO - waiting migration on Dynamic Config
 	// api.Post("logger/level", controller.SetLoggerLevel)
 	// api.Post("quality", controller.UpdateQualityRewrite)
 
 	// group upstream
-	upstr := api.Group("/balancer")
-	upstr.Get("/stats", controller.GetBalancerStats)
-	upstr.Post("/stats/reset", controller.BalancerStatsReset)
+	// TODO : resolve with app.HandleRouter
+	// upstr := api.Group("/balancer")
+	// upstr.Get("/stats", controller.GetBalancerStats)
+	// upstr.Post("/stats/reset", controller.BalancerStatsReset)
 
 	// upstrCluster := upstr.Group("/cluster", skip.New(m.fbHndApiPreCondErr, m.fbMidBlcPreCond))
 	// upstrCluster.Get("/cache-nodes",

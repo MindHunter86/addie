@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,7 +56,8 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 	dc = new(DynamicConfig)
 	cli := utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
 
-	source := cli.String("dynamic-config-source")
+	source := strings.TrimSpace(cli.String("dynamic-config-source"))
+
 	// check if dynamic-config-source is url or file
 	if isURL(source) {
 		dc.url = source
@@ -152,7 +154,7 @@ func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
 	return m.http.downloadSourceFromURL(m.url, m.temp)
 }
 
-func (m *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
+func (*DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
 	for _, cat := range c.App.VisibleFlagCategories() {
 		if cat.Name() != catname {
 			continue
@@ -162,12 +164,12 @@ func (m *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (key
 			continue
 		}
 
-		if m.keys == nil {
-			m.keys = make([]string, 0, len(cat.Flags()))
+		if keys == nil {
+			keys = make([]string, 0, len(cat.Flags()))
 		}
 
 		for _, flag := range cat.Flags() {
-			m.keys = append(m.keys, flag.Names()...)
+			keys = append(keys, flag.Names()...)
 		}
 	}
 
@@ -175,7 +177,7 @@ func (m *DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (key
 		return nil
 	}
 
-	return
+	return keys
 }
 
 // skipcq: SCC-U1000 temporary disabled

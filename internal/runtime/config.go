@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	utl "github.com/MindHunter86/addie/internal/utils"
+	iutils "github.com/MindHunter86/addie/internal/utils"
 	"github.com/MindHunter86/addie/utils"
 	"github.com/rs/zerolog"
 	"github.com/urfave/cli/v2"
@@ -61,7 +61,7 @@ var (
 
 func NewStorage(c context.Context) (st *Storage, _ error) {
 	done = c.Done
-	ccx := c.Value(utils.ContextKeyCliContext).(*cli.Context)
+	ccx := c.Value(iutils.CtxCliContext).(*cli.Context)
 
 	deployStep, deployInteration =
 		ccx.Int("balancer-softer-step"),
@@ -75,7 +75,7 @@ func NewStorage(c context.Context) (st *Storage, _ error) {
 		log.Warn().Msg("low value detected for softer-tick arg")
 	}
 
-	if ccx.App.Version != utl.DevelVersionIdent {
+	if ccx.App.Version != iutils.DevelVersionIdent {
 		ParamDefaults[ParamAccessStdout] = 0
 		ParamDefaults[ParamAccessLevel] = zerolog.InfoLevel
 	}

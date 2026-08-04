@@ -12,17 +12,7 @@ const (
 
 	CtxConfig
 
-	CtxController
-
-	CtxBalancers
-	CtxTitleCache
-
-	CtxRuntime
-	CtxRPatcher
-
-	CtxDatabase
-
-	// CtxAbortFunc
+	CtxApp
 
 	// internal use only
 	CtxDynamic
@@ -36,13 +26,9 @@ var CKtoa = map[ContextKey]string{
 	CtxAccsLogger: "access logger",
 	CtxStats:      "stats",
 
-	CtxBalancers:  "balancers",
-	CtxTitleCache: "titles cache",
+	CtxConfig: "dynamic config",
 
-	CtxRuntime:  "runtime",
-	CtxRPatcher: "request patcher",
-
-	CtxDatabase: "bbolt database",
+	CtxApp: "legacy app",
 
 	// internal use only
 	CtxDynamic:    "",

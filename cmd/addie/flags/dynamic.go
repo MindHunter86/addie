@@ -25,6 +25,7 @@ func dynamicFlags(expertMode bool) []cli.Flag {
 			Aliases:  []string{"c"},
 			EnvVars:  []string{"DYNAMIC_CONFIG"},
 			Usage:    "`FILE/URL` with/to config settings in YAML format (only for dynamic values)",
+			Required: true,
 		},
 		&cli.StringFlag{
 			Name:     "dynamic-config-source-tmp",

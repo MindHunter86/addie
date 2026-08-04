@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/MindHunter86/addie/internal/app"
 	"github.com/MindHunter86/addie/internal/stats"
 	"github.com/MindHunter86/addie/internal/utils"
 	"github.com/gofiber/fiber/v2"
@@ -47,7 +48,7 @@ func NewService(c *cli.Context, l, al *zerolog.Logger) *Service {
 			DisableDefaultDate: false,
 			DisableKeepalive:   false,
 
-			DisableHeaderNormalizing:     true,
+			DisableHeaderNormalizing:     false,
 			DisableDefaultContentType:    true,
 			DisablePreParseMultipartForm: true,
 
@@ -122,9 +123,15 @@ func (m *Service) Bootstrap() (e error) {
 		return
 	}
 
+	//
+	// LEGACY section (will be refactored)
+
 	// fiber configuration
-	m.fiberMiddlewareInitialization()
-	m.fiberRouterInitialization()
+	// TODO : temporary disable svc router
+	// m.fiberMiddlewareInitialization()
+	// m.fiberRouterInitialization()
+	app := utils.ContextValueExtract[*app.App](m.ctx, utils.CtxApp)
+	app.HandleRoutes(m.fb)
 
 	// custom listener configuration
 	flisten := func() error {
