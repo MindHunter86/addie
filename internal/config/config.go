@@ -8,6 +8,7 @@ import (
 	"math"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,7 +56,8 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 	dc = new(DynamicConfig)
 	cli := utils.ContextValueExtract[*cli.Context](c, utils.CtxCliContext)
 
-	source := cli.String("dynamic-config-source")
+	source := strings.TrimSpace(cli.String("dynamic-config-source"))
+
 	// check if dynamic-config-source is url or file
 	if isURL(source) {
 		dc.url = source

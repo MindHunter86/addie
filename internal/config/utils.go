@@ -4,15 +4,18 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
+	"strings"
 )
 
 func isURL(link string) bool {
+	link = strings.TrimSpace(link)
 	_, e := url.Parse(link)
-	return e == nil
+	return link != "" && e == nil
 }
 
 func isPath(path string) bool {
-	return fs.ValidPath(path)
+	path = strings.TrimSpace(path)
+	return path != "" && fs.ValidPath(path)
 }
 
 func getTmpFilePath(appname, tmppath string) (_ string, e error) {
