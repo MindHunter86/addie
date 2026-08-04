@@ -23,10 +23,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-func (m *App) fiberConfigure() {
+func (m *App) HandleRoutes(fapp *fiber.App) {
 
 	// panic recover for all handlers
-	m.fb.Use(recover.New(recover.Config{
+	fapp.Use(recover.New(recover.Config{
 		EnableStackTrace: true,
 		StackTraceHandler: func(c *fiber.Ctx, e interface{}) {
 			rlog(c).Error().Str("request", c.Request().String()).Bytes("stack", debug.Stack()).
@@ -38,12 +38,12 @@ func (m *App) fiberConfigure() {
 	}))
 
 	// request id
-	m.fb.Use(requestid.New())
+	fapp.Use(requestid.New())
 
 	// prefixed logger initialization
 	// - we send logs in syslog and stdout by default,
 	// - but if access-log-stdout is 0 we use syslog output only
-	m.fb.Use(func(c *fiber.Ctx) error {
+	fapp.Use(func(c *fiber.Ctx) error {
 		logger := gLog.With().Str("id", c.Locals("requestid").(string)).Logger().
 			Level(m.runtime.Config.Get(runtime.ParamAccessLevel).(zerolog.Level))
 		syslogger := logger.Output(m.syslogWriter)
@@ -58,7 +58,7 @@ func (m *App) fiberConfigure() {
 	})
 
 	// time collector + logger
-	m.fb.Use(func(c *fiber.Ctx) (e error) {
+	fapp.Use(func(c *fiber.Ctx) (e error) {
 		if !strings.HasPrefix(c.Path(), "/videos/media/ts") &&
 			!strings.HasPrefix(c.Path(), "/api/balancer/cluster") {
 			// rlog(c).Trace().Str("path", c.Path()).Msg("non sign request detected, skipping timings...")
@@ -130,20 +130,20 @@ func (m *App) fiberConfigure() {
 
 	// debug
 	if gCli.Bool("http-pprof-enable") {
-		m.fb.Use(pprof.New())
+		fapp.Use(pprof.New())
 	}
 
 	// favicon disable
-	m.fb.Use(favicon.New(favicon.ConfigDefault))
+	fapp.Use(favicon.New(favicon.ConfigDefault))
 
 	// compress support
-	m.fb.Use(compress.New(compress.Config{
+	fapp.Use(compress.New(compress.Config{
 		Level: compress.LevelBestSpeed,
 	}))
 
 	// CORS serving
 	if gCli.Bool("http-cors") {
-		m.fb.Use(cors.New(cors.Config{
+		fapp.Use(cors.New(cors.Config{
 			AllowOrigins: "*",
 			AllowHeaders: strings.Join([]string{
 				fiber.HeaderContentType,
@@ -157,7 +157,7 @@ func (m *App) fiberConfigure() {
 	// Routes
 
 	// group api - /api
-	api := m.fb.Group("/api")
+	api := fapp.Group("/api")
 
 	// TODO - waiting migration on Dynamic Config
 	// api.Post("logger/level", gController.SetLoggerLevel)
@@ -174,7 +174,7 @@ func (m *App) fiberConfigure() {
 		m.fbHndBlcNodesBalanceFallback)
 
 	// group media - /videos/media/ts
-	media := m.fb.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
+	media := fapp.Group("/videos/media/ts", skip.New(m.fbHndApiPreCondErr, m.fbMidAppPreCond))
 
 	// group media - middlewares
 	media.Use(m.fbMidAppFakeQuality)
