@@ -200,7 +200,7 @@ func (m *ClusterBalancer) UpdateServers(servers map[string]net.IP) {
 
 			// TODO - temporary, planned upgrade to BFD
 			if ok = srv.healthcheck(400 * time.Millisecond); !ok {
-			m.log.Warn().Msgf("updated server %s in cluster %s is disabled due to tcp fails", srv.Name, m.GetClusterName())
+				m.log.Warn().Msgf("updated server %s in cluster %s is disabled due to tcp fails", srv.Name, m.GetClusterName())
 				srv.disable()
 			}
 
