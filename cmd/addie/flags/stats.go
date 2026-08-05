@@ -44,8 +44,9 @@ func statsFlags(expertMode bool) []cli.Flag {
 			Usage:    "`INTERVAL` in seconds for stats collector; must be a multiple of 5 seconds",
 			Hidden:   expertMode,
 			Value:    5 * time.Second,
-			Action: validate("stats-metrics-interval", toSeconds,
+			Action: validate("stats-metrics-interval", toSecondsCeil,
 				v.Required, v.Min(float64(5))),
+			// TODO : MINOR : add mod(v) == 0 check
 		},
 		&cli.DurationFlag{
 			Name:     "stats-metrics-loop-warn",

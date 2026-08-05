@@ -55,21 +55,21 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Name:     "http-timeout-read",
 			Category: "HTTP server settings",
 			Value:    10 * time.Second,
-			Action: validate("http-timeout-read", toSeconds,
+			Action: validate("http-timeout-read", toSecondsCeil,
 				v.Required, v.Min(0)),
 		},
 		&cli.DurationFlag{
 			Name:     "http-timeout-write",
 			Category: "HTTP server settings",
 			Value:    5 * time.Second,
-			Action: validate("http-timeout-write", toSeconds,
+			Action: validate("http-timeout-write", toSecondsCeil,
 				v.Required, v.Min(0)),
 		},
 		&cli.DurationFlag{
 			Name:     "http-timeout-idle",
 			Category: "HTTP server settings",
 			Value:    10 * time.Minute,
-			Action: validate("http-timeout-idle", toSeconds,
+			Action: validate("http-timeout-idle", toSecondsCeil,
 				v.Required, v.Min(0)),
 		},
 		&cli.IntFlag{
@@ -169,7 +169,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Name:     "limit-request-expiration",
 			Category: "Limit Request",
 			Value:    10 * time.Second,
-			Action: validate("limit-request-expiration", toSeconds,
+			Action: validate("limit-request-expiration", toSecondsCeil,
 				v.Required, v.Min(0)),
 		},
 

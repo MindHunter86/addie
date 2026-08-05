@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
@@ -38,6 +39,6 @@ func validate[T comparable](field string, t transformer[T], rules ...validation.
 
 type transformer[T comparable] func(T) int64
 
-func toSeconds(val time.Duration) int64 {
-	return int64(val.Seconds())
+func toSecondsCeil(val time.Duration) int64 {
+	return int64(math.Ceil(val.Seconds()))
 }
