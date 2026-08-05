@@ -29,7 +29,6 @@ type DynamicConfig struct {
 
 	url  string
 	path string
-	temp string
 	mxsz int64
 
 	fint time.Duration
@@ -75,7 +74,7 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 
 	// create temp file for url downloading
 	if dc.url != "" {
-		if dc.temp, e = getTmpFilePath(cli.App.Name, tmpdir); e != nil {
+		if dc.path, e = getTmpFilePath(cli.App.Name, tmpdir); e != nil {
 			return nil, utils.ExtraErrorWrapper(e, "could not create temp dir by dynamic-config-source-tmp;")
 		}
 
@@ -90,6 +89,8 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 
 	dc.fint = cli.Duration("dynamic-config-fetch-interval")
 	dc.mxsz = cli.Int64("dynamic-config-max-size")
+
+	// !!! TODO initial unmarshal
 
 	return
 }
@@ -118,7 +119,7 @@ func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
 				// !! TODO - 2DELETE
 				pp.Print(e)
 
-				if e.Has(fsnotify.Write) && e.Name == m.temp {
+				if e.Has(fsnotify.Write) && e.Name == m.path {
 					log.Debug().Msg("temp file modification caught: updating dynamic config values...")
 					// check md5 !
 					// RELOAD
@@ -134,7 +135,7 @@ func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
 		}
 	}()
 
-	return m.wach.Add(m.temp)
+	return m.wach.Add(m.path)
 }
 
 func (m *DynamicConfig) onServiceDestruct(_ context.Context) error {
@@ -143,6 +144,10 @@ func (m *DynamicConfig) onServiceDestruct(_ context.Context) error {
 
 // Ticker function for donwloading Remote Source every
 func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
+	if m.url == "" {
+		return
+	}
+
 	tick := utils.ContextValueExtract[uint64](c, utils.CtxTickerTick)
 	if tick%uint64(m.fint.Seconds()) != 0 {
 		return
@@ -151,7 +156,7 @@ func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
 	}
 
 	defer m.fmtx.Unlock()
-	return m.http.downloadSourceFromURL(m.url, m.temp)
+	return m.http.downloadSourceFromURL(m.url, m.path)
 }
 
 func (*DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
@@ -186,7 +191,7 @@ func (m *DynamicConfig) updateDynamicFlags() (e error) {
 	buf := bytebufferpool.Get()
 	defer bytebufferpool.Put(buf)
 
-	if buf.B, e = m.fetchContentFromFile(m.temp, buf.B); e != nil {
+	if buf.B, e = m.fetchContentFromFile(m.path, m.mxsz, buf.B); e != nil {
 		return
 	}
 
@@ -206,13 +211,13 @@ func (m *DynamicConfig) updateDynamicFlags() (e error) {
 }
 
 // skipcq: SCC-U1000 temporary disabled
-func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte, e error) {
+func (*DynamicConfig) fetchContentFromFile(path string, mxsz int64, buf []byte) (_ []byte, e error) {
 	if path == "" {
 		return nil, os.ErrNotExist
 	}
 
 	var fd *os.File
-	if fd, e = os.Open(m.temp); e != nil {
+	if fd, e = os.Open(path); e != nil {
 		return
 	}
 	defer fd.Close()
@@ -223,8 +228,8 @@ func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte,
 	}
 
 	size := fifo.Size()
-	if size > m.mxsz {
-		return nil, fmt.Errorf("rejecting file sized more than limit (size - %d; limit - %d)", size, m.mxsz)
+	if size > mxsz {
+		return nil, fmt.Errorf("rejecting file sized more than limit (size - %d; limit - %d)", size, mxsz)
 	}
 
 	if size < 0 || uint64(size)+1 > uint64(math.MaxInt) {
