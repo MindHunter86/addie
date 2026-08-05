@@ -46,7 +46,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			DisableDefaultText: true,
 
 			// TODO : MINOR : custom validator
-			Action: func(ctx *cli.Context, b bool) error {
+			Action: func(*cli.Context, bool) error {
 				return fmt.Errorf("temporary could not be manualy switched")
 			},
 		},
