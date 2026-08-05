@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"regexp"
 	"time"
 
 	v "github.com/go-ozzo/ozzo-validation/v4"
@@ -9,6 +10,11 @@ import (
 )
 
 func statsFlags(expertMode bool) []cli.Flag {
+	prototest, err := regexp.Compile("(udp|tcp)[46]?")
+	if err != nil {
+		panic(err)
+	}
+
 	return []cli.Flag{
 		// stats settings
 		&cli.StringFlag{
@@ -21,7 +27,8 @@ func statsFlags(expertMode bool) []cli.Flag {
 			Category: "Stats Collection",
 			Hidden:   expertMode,
 			Value:    "udp4",
-			// TODO : MINOR : custom validator
+			Action: validate[string]("stats-graphite-proto", nil,
+				v.Match(prototest)),
 		},
 		&cli.StringFlag{
 			Name:     "stats-graphite-server",

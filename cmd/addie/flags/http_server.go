@@ -18,8 +18,9 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Category: "HTTP server settings",
 			Usage:    "format - 127.0.0.1:8080, :8080",
 			Value:    "127.0.0.1:8080",
-			Action: validate[string]("http-listen-addr", nil,
-				v.Required, is.DialString),
+			// TODO : MINOR : custom validation
+			// note : is.DialString requires a non-empty host,
+			// 	but the flag's own usage documents :8080 as a supported format
 		},
 		&cli.StringFlag{
 			Name:     "http-trusted-proxies",
@@ -85,7 +86,8 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:              "enable golang http-pprof methods",
 			DisableDefaultText: true,
 			Hidden:             expertMode,
-			// TODO : MINOR : custom validator
+			Action: validate[bool]("http-pprof-enable", nil,
+				v.In(true, false)),
 		},
 		&cli.StringFlag{
 			Name:     "http-pprof-prefix",
@@ -123,7 +125,8 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:              "enables SO_REUSEPORT",
 			DisableDefaultText: true,
 			Hidden:             expertMode,
-			// TODO : MINOR : custom validator
+			Action: validate[bool]("http-adv-reuseport", nil,
+				v.In(true, false)),
 		},
 		&cli.BoolFlag{
 			Name:               "http-adv-deferaccept",
@@ -131,7 +134,8 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:              "enables TCP_DEFER_ACCEPT",
 			DisableDefaultText: true,
 			Hidden:             expertMode,
-			// TODO : MINOR : custom validator
+			Action: validate[bool]("http-adv-deferaccept", nil,
+				v.In(true, false)),
 		},
 		&cli.BoolFlag{
 			Name:               "http-adv-tcpfastopen",
@@ -139,7 +143,8 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:              "enables TCP_FASTOPEN",
 			DisableDefaultText: true,
 			Hidden:             expertMode,
-			// TODO : MINOR : custom validator
+			Action: validate[bool]("http-adv-tcpfastopen", nil,
+				v.In(true, false)),
 		},
 		&cli.IntFlag{
 			Name:     "http-adv-backlog",
@@ -176,6 +181,8 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Category: "Legacy",
 			Usage:    "enable cors requests serving",
 			Value:    true,
+			Action: validate[bool]("http-cors", nil,
+				v.In(true, false)),
 		},
 	}
 }
