@@ -55,21 +55,21 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Category: "HTTP server settings",
 			Value:    10 * time.Second,
 			Action: validate("http-timeout-read", toSeconds,
-				v.Required, is.Int),
+				v.Required, v.Min(0)),
 		},
 		&cli.DurationFlag{
 			Name:     "http-timeout-write",
 			Category: "HTTP server settings",
 			Value:    5 * time.Second,
 			Action: validate("http-timeout-write", toSeconds,
-				v.Required, is.Int),
+				v.Required, v.Min(0)),
 		},
 		&cli.DurationFlag{
 			Name:     "http-timeout-idle",
 			Category: "HTTP server settings",
 			Value:    10 * time.Minute,
 			Action: validate("http-timeout-idle", toSeconds,
-				v.Required, is.Int),
+				v.Required, v.Min(0)),
 		},
 		&cli.IntFlag{
 			Name:     "http-concurrency-conns",
@@ -77,7 +77,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Hidden:   expertMode,
 			Value:    1 << 19, // 512k (fasthttp default: 256k)
 			Action: validate[int]("http-concurrency-conns", nil,
-				v.Required, is.Int),
+				v.Required, v.Min(0)),
 		},
 		&cli.BoolFlag{
 			Name:               "http-pprof-enable",
@@ -148,7 +148,7 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Hidden:   expertMode,
 			Value:    0,
 			Action: validate[int]("http-adv-backlog", nil,
-				is.Int, v.Min(128), v.Max(8192)),
+				v.Min(128), v.Max(8192)),
 		},
 
 		// fiber's limit request:
@@ -158,14 +158,14 @@ func httpServerFlags(expertMode bool) []cli.Flag {
 			Usage:    "if 0 - disabled",
 			Value:    20,
 			Action: validate[int]("limit-request-maxrps", nil,
-				is.Int),
+				v.Min(0)),
 		},
 		&cli.DurationFlag{
 			Name:     "limit-request-expiration",
 			Category: "Limit Request",
 			Value:    10 * time.Second,
 			Action: validate("limit-request-expiration", toSeconds,
-				v.Required, is.Int),
+				v.Required, v.Min(0)),
 		},
 
 		// !! LEGACY
