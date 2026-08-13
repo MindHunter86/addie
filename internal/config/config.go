@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/MindHunter86/addie/internal/utils"
@@ -22,18 +23,20 @@ import (
 )
 
 type DynamicConfig struct {
-	http *HttpClient
-	wach *fsnotify.Watcher
+	http    *HttpClient
+	iowatch *fsnotify.Watcher
 
 	keys []string
 
 	url  string
-	path string
 	temp string
 	mxsz int64
 
 	fint time.Duration
 	fmtx sync.RWMutex
+
+	epoch *atomic.Int32
+	stor  map[int32]*ExternalSource
 }
 
 // func test() {
@@ -62,7 +65,7 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 	if isURL(source) {
 		dc.url = source
 	} else if isPath(source) {
-		dc.path = source
+		dc.temp = source
 	} else {
 		return nil, errors.New("could not parse given dynamic-config-source; should be URL or path")
 	}
@@ -91,15 +94,26 @@ func NewDynamicConfig(c context.Context, catname string) (dc *DynamicConfig, e e
 	dc.fint = cli.Duration("dynamic-config-fetch-interval")
 	dc.mxsz = cli.Int64("dynamic-config-max-size")
 
-	return
+	dc.epoch, dc.stor =
+		new(atomic.Int32),
+		make(map[int32]*ExternalSource, epochMultiply)
+
+	return dc, dc.initialConfigLoad()
+}
+
+func (m *DynamicConfig) LoadSource() *ExternalSource {
+	return m.stor[m.epoch.Load()]
 }
 
 func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
-	if m.wach, e = fsnotify.NewWatcher(); e != nil {
+	if m.iowatch, e = fsnotify.NewWatcher(); e != nil {
 		return
 	}
 
 	log := utils.ContextValueExtract[*zerolog.Logger](c, utils.CtxZeroLogger)
+
+	log.Trace().Msgf("starting ionotify watcher for %s", m.temp)
+	m.iowatch.Add(m.temp)
 
 	go func() {
 	LOOP:
@@ -107,10 +121,10 @@ func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
 			select {
 			case <-c.Done():
 				break LOOP
-			case e, ok := <-m.wach.Events:
+			case e, ok := <-m.iowatch.Events:
 				if !ok {
 					log.Warn().Msg("could not get events from fsnotify Events goroutine, goroutine will be destroyed")
-					return
+					break LOOP
 				}
 
 				log.Trace().Msg("caught fsnotify event")
@@ -121,24 +135,25 @@ func (m *DynamicConfig) onServiceBootstrap(c context.Context) (e error) {
 				if e.Has(fsnotify.Write) && e.Name == m.temp {
 					log.Debug().Msg("temp file modification caught: updating dynamic config values...")
 					// check md5 !
+					// ADD MUTEX
 					// RELOAD
 				}
 
-			case err, ok := <-m.wach.Errors:
+			case err, ok := <-m.iowatch.Errors:
 				if !ok {
 					log.Warn().Msg("could not get events from fsnotify Errors goroutine, goroutine will be destroyed")
-					return
+					break LOOP
 				}
 				log.Warn().Msg(utils.ExtraErrorWrapper(err, "caught fsnotify error").Error())
 			}
 		}
 	}()
 
-	return m.wach.Add(m.temp)
+	return
 }
 
-func (m *DynamicConfig) onServiceDestruct(_ context.Context) error {
-	return m.wach.Close()
+func (m *DynamicConfig) onServiceDestruct(context.Context) error {
+	return m.iowatch.Close()
 }
 
 // Ticker function for donwloading Remote Source every
@@ -152,6 +167,21 @@ func (m *DynamicConfig) onServiceTicker1sec(c context.Context) (e error) {
 
 	defer m.fmtx.Unlock()
 	return m.http.downloadSourceFromURL(m.url, m.temp)
+}
+
+func (m *DynamicConfig) initialConfigLoad() (e error) {
+	if !m.fmtx.TryLock() {
+		return fmt.Errorf("BUG: could not lock mutex for initial config loading")
+	}
+	defer m.fmtx.Unlock()
+
+	if m.url != "" {
+		if e = m.http.downloadSourceFromURL(m.url, m.temp); e != nil {
+			return
+		}
+	}
+
+	return m.updateDynamicFlags()
 }
 
 func (*DynamicConfig) lookupForConfigKeys(c *cli.Context, catname string) (keys []string) {
@@ -197,11 +227,22 @@ func (m *DynamicConfig) updateDynamicFlags() (e error) {
 
 	pp.Print(es)
 
-	//
+	if es == nil || es.Balancer == nil {
+		return fmt.Errorf("could not load config: unmarshal returned empty struct; is config valid YAML?")
+	}
 
 	// update config
+	curr := m.epoch.Load()
+	next := (curr + 1) % epochMultiply
+	m.stor[next] = es
 
 	// update schema (regions + routes)
+
+	// commit epoch
+	if ok := m.epoch.CompareAndSwap(curr, next); !ok {
+		return fmt.Errorf("could not cmpAndSwp config epoch, is it race cond?")
+	}
+
 	return
 }
 
@@ -259,4 +300,8 @@ func (m *DynamicConfig) fetchContentFromFile(path string, buf []byte) (_ []byte,
 func (m *DynamicConfig) unmarshalExternalSource(payload []byte) (_ *ExternalSource, _ error) {
 	var es ExternalSource
 	return &es, yaml.Unmarshal(payload, &es)
+}
+
+func (m *DynamicConfig) hasRemoteSource() bool {
+	return m.url != "" && m.http != nil
 }

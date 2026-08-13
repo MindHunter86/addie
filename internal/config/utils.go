@@ -9,8 +9,8 @@ import (
 
 func isURL(link string) bool {
 	link = strings.TrimSpace(link)
-	_, e := url.Parse(link)
-	return link != "" && e == nil
+	u, e := url.Parse(link)
+	return link != "" && e == nil && u.Host != ""
 }
 
 func isPath(path string) bool {
