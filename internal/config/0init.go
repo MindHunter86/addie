@@ -8,17 +8,17 @@ import (
 
 func init() {
 	utils.RegisterSubservice(utils.CtxConfig,
-		func(c context.Context) (_ any, e error) {
-			var dc *DynamicConfig
-			if dc, e = NewDynamicConfig(c, utils.DynamicConfigCategory); e != nil {
-				return
-			}
+		func(c context.Context) (any, error) {
+			dc, e := NewDynamicConfig(c, utils.DynamicConfigCategory)
 
-			// callbacks
+			// subservice callbacks
 			utils.RegisterCallback(utils.OnServiceBootstrap, dc.onServiceBootstrap)
 			utils.RegisterCallback(utils.OnServiceDestruct, dc.onServiceDestruct)
-			utils.RegisterCallback(utils.OnServiceTicker1sec, dc.onServiceTicker1sec)
 
-			return dc, nil
+			if dc.hasRemoteSource() {
+				utils.RegisterCallback(utils.OnServiceTicker1sec, dc.onServiceTicker1sec)
+			}
+
+			return dc, e
 		})
 }

@@ -3,12 +3,12 @@ package config
 // YAML config parsing
 type (
 	ExternalSource struct {
-		Balancer *ExternalSourceBalancer `yaml:",omitempty,inline"`
+		Balancer *ExternalSourceBalancer `yaml:",omitempty"`
 	}
 	ExternalSourceBalancer struct {
-		Config  map[string]any              `yaml:",omitempty,inline"`
-		Routing map[string]*BalancerRouting `yaml:",omitempty,inline"`
-		Regions map[string]*BalancerRegion  `yaml:",omitempty,inline"`
+		Config  map[string]any              `yaml:",omitempty"`
+		Routing map[string]*BalancerRouting `yaml:",omitempty"`
+		Regions map[string]*BalancerRegion  `yaml:",omitempty"`
 	}
 	BalancerRouting struct {
 		Countries []string `yaml:",omitempty"`
@@ -20,8 +20,8 @@ type (
 	BalancerRegion struct {
 		Dynamic bool `yaml:",omitempty"`
 
-		Orgin    *RegionOrigin     `yaml:",omitempty,inline"`
-		Upstream []*RegionUpstream `yaml:",omitempty,inline"`
+		Origin   *RegionOrigin     `yaml:",omitempty"`
+		Upstream []*RegionUpstream `yaml:",omitempty"`
 	}
 	RegionOrigin struct {
 		Region string `yaml:",omitempty"`
@@ -36,3 +36,5 @@ type (
 // urfave generic flags compatibility
 type BalancerRoutingMap map[string]*BalancerRouting
 type BalancerRegionMap map[string]*BalancerRegion
+
+const epochMultiply = 5
